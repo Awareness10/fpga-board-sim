@@ -109,3 +109,29 @@ def require(path, what):
                  }.get(sys.platform, "Install Vivado/Vitis 2023.2 (default ~/Xilinx), or set XILINX_VIVADO / XILINX_VITIS.")
         raise SystemExit(f"{what} not found. {where}")
     return path
+
+
+def find_vitis():
+    return find_xilinx("Vitis", "vitis", "XILINX_VITIS")
+
+
+def find_xsdb():
+    return find_xilinx("Vitis", "xsdb", "XILINX_VITIS")
+
+
+def xilinx_env(tool):
+    """Environment for a Vitis tool, roughly what Vitis' settings64.sh / settings64.bat set
+    up: XILINX_VITIS, and Vitis' own ARM compilers on PATH."""
+    env = dict(os.environ)
+    root = Path(tool).resolve().parent.parent
+    host = "nt" if sys.platform == "win32" else "lin"
+    env["XILINX_VITIS"] = str(root)
+    paths = [root / "bin", root / "gnu" / "aarch32" / host / "gcc-arm-none-eabi" / "bin",
+             root / "gnu" / "aarch64" / host / "aarch64-none" / "bin"]
+    env["PATH"] = os.pathsep.join([str(p) for p in paths if p.is_dir()] + [env.get("PATH", "")])
+    # On Linux distributions other than Ubuntu/RHEL (Arch, Fedora, ...) Vitis' bundled cmake
+    # can't find OpenSSL 1.0: point it at the copy Vitis ships for Ubuntu. Harmless elsewhere.
+    libs = root / "tps" / "lnx64" / "cmake-3.24.2" / "libs" / "Ubuntu"
+    if sys.platform.startswith("linux") and libs.is_dir():
+        env["LD_LIBRARY_PATH"] = os.pathsep.join(filter(None, [str(libs), env.get("LD_LIBRARY_PATH")]))
+    return env

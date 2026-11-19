@@ -99,6 +99,36 @@ def cmd_zybo_wave(args):
     return open_wave(tools.repo_dir(*ZYBO_PL), args.testbench)
 
 
+# --- Zybo on the real board: Vivado, Vitis, JTAG --------------------------------------
+def zybo_hw_dir():
+    return tools.repo_dir("zybo") / "build" / "hw"
+
+
+def cmd_zybo_xsa(args):
+    vivado = tools.require(tools.find_vivado(), "Vivado")
+    out = zybo_hw_dir()
+    out.mkdir(parents=True, exist_ok=True)
+    cmd = [vivado, "-mode", "batch", "-nojournal", "-log", out / f"vivado_{args.board}.log",
+           "-source", tools.repo_dir("zybo", "vivado", "zybo_gpio.tcl"), "-tclargs", out, args.board]
+    return tools.run(cmd + (["bd"] if args.bd_only else []), cwd=out)
+
+
+def cmd_zybo_vitis(args):
+    vitis = tools.require(tools.find_vitis(), "Vitis")
+    xsa = zybo_hw_dir() / f"zybo_{args.board}.xsa"
+    if not xsa.exists():
+        raise SystemExit(f"{xsa} not found: run `boardsim zybo xsa --board {args.board}` first")
+    ws = zybo_hw_dir() / "vitis_ws"
+    cmd = [vitis, "-s", tools.repo_dir("zybo", "vitis", "build_apps.py"), xsa, ws, *args.apps]
+    return tools.run(cmd, env=tools.xilinx_env(vitis))
+
+
+def cmd_zybo_jtag(args):
+    xsdb = tools.require(tools.find_xsdb(), "XSDB (part of Vitis)")
+    cmd = [xsdb, tools.repo_dir("zybo", "vitis", "run_jtag.tcl"), zybo_hw_dir() / "vitis_ws", args.app]
+    return tools.run(cmd, env=tools.xilinx_env(xsdb))
+
+
 # --- Basys3 ---------------------------------------------------------------------
 def basys3_dir(args):
     """--dir (your own project with src/, tb/, constraints/) or the repo's basys3/."""
@@ -188,6 +218,19 @@ def main(argv=None):
     p = zybo.add_parser("wave", help="simulate a PL testbench and open the waveform")
     p.add_argument("testbench", nargs="?", default="zybo_gpio_tb")
     p.set_defaults(fn=cmd_zybo_wave)
+
+    boards = ("z7-20", "z7-10")
+    p = zybo.add_parser("xsa", help="Vivado: block design, bitstream and .xsa for the real board")
+    p.add_argument("--board", choices=boards, default="z7-20")
+    p.add_argument("--bd-only", action="store_true", help="stop after the block design (quick check)")
+    p.set_defaults(fn=cmd_zybo_xsa)
+    p = zybo.add_parser("vitis", help="Vitis: platform + apps from the .xsa (same source as the emulation)")
+    p.add_argument("apps", nargs="*", help="default: xgpio_blink xgpio_btns")
+    p.add_argument("--board", choices=boards, default="z7-20")
+    p.set_defaults(fn=cmd_zybo_vitis)
+    p = zybo.add_parser("jtag", help="load the bitstream and an app onto a connected Zybo over JTAG")
+    p.add_argument("app", nargs="?", default="xgpio_blink")
+    p.set_defaults(fn=cmd_zybo_jtag)
 
     basys3 = sub.add_parser("basys3", help="Basys3 (Artix-7): VHDL in GHDL, Vivado build").add_subparsers(dest="bcmd", required=True)
     dir_help = "your own design folder with src/, tb/, constraints/ (default: the repo's basys3/)"
