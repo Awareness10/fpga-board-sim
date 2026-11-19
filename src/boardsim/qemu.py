@@ -70,8 +70,16 @@ class Qemu:
             cmd += ["-icount", f"shift={icount_shift},align=on"]
         cmd += list(extra)
         flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
-        self.proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT, creationflags=flags)
+        try:
+            self.proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT, creationflags=flags)
+        except OSError as e:
+            hint = ""
+            if sys.platform == "win32":
+                hint = ("\nWindows refused to start it. If it says the file is blocked (Smart App Control, "
+                        "an application control policy or your antivirus), allow qemu-system-arm.exe there, "
+                        "or check that it starts at all: & \"" + qemu + "\" --version")
+            raise SystemExit(f"Could not start QEMU ({qemu}): {e}{hint}")
         self.messages = []                       # QEMU's own stdout/stderr (warnings)
         self.on_message = on_message
         threading.Thread(target=self._drain, daemon=True).start()
@@ -81,9 +89,15 @@ class Qemu:
             try:
                 self.sock = socket.create_connection(("127.0.0.1", port), timeout=1)
             except OSError:
-                if self.proc.poll() is not None or time.time() > deadline:
-                    out = b"".join(self.messages).decode(errors="replace")
-                    raise SystemExit(f"QEMU did not start ({' '.join(cmd)}):\n{out}")
+                code = self.proc.poll()
+                if code is not None or time.time() > deadline:
+                    if code is None:
+                        self.proc.kill()
+                    time.sleep(0.2)              # let _drain pick up QEMU's last words
+                    out = b"".join(self.messages).decode(errors="replace").strip()
+                    why = f"exited with code {code}" if code is not None else "never opened its UART socket (10 s)"
+                    raise SystemExit(f"QEMU did not start: it {why}.\n  command: {' '.join(cmd)}\n"
+                                     f"  QEMU said: {out or '(nothing)'}")
                 time.sleep(0.05)
         self.sock.settimeout(None)
 
