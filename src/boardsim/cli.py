@@ -20,7 +20,7 @@ def cmd_setup(args):
 
 
 def cmd_install(args):
-    ghdl.install(force=args.force)
+    {"ghdl": ghdl.install, "surfer": tools.install_surfer}[args.tool](force=args.force)
     return 0
 
 
@@ -91,12 +91,15 @@ def open_wave(design, tb, extra_sim=()):
         return 1
     d.run(tb, wave=True)
     wave = d.build / f"{tb}.ghw"
-    viewer = tools.find_gtkwave()
+    kind, viewer = tools.find_viewer()
+    print(f"Waveform: {term.path(wave)}")
     if not viewer:
-        print(f"Waveform: {wave}\n(gtkwave not found: open it in any viewer, e.g. Surfer)")
+        print(term.warn("No waveform viewer found: ") + "uv run boardsim install surfer  (or install GTKWave)")
         return 0
-    save = d.root / "waves" / f"{tb}.gtkw"
-    cmd = [viewer, str(wave)] + ([str(save)] if save.exists() else [])
+    save = d.root / "waves" / f"{tb}.gtkw"          # GTKWave's saved signal layout, if there is one
+    cmd = [viewer, str(wave)] + ([str(save)] if kind == "gtkwave" and save.exists() else [])
+    if kind == "surfer" and save.exists():
+        print(term.dim("(Surfer: add signals from the scope list on the left; the saved layout is GTKWave's)"))
     subprocess.Popen(cmd, cwd=d.root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return 0
 
@@ -204,8 +207,8 @@ def main(argv=None):
     p.add_argument("--system-toolchain", action="store_true", help="use your own arm-none-eabi-gcc")
     p.set_defaults(fn=cmd_test)
 
-    p = sub.add_parser("install", help="download a tool for you (GHDL's official release build)")
-    p.add_argument("tool", choices=["ghdl"])
+    p = sub.add_parser("install", help="download a tool's official build into your user folder")
+    p.add_argument("tool", choices=["ghdl", "surfer"], help="ghdl (VHDL simulator) or surfer (waveform viewer)")
     p.add_argument("--force", action="store_true", help="download again even if it is installed")
     p.set_defaults(fn=cmd_install)
     zybo = sub.add_parser("zybo", help="Zybo Z7 (Zynq-7000): ARM in QEMU, PL in GHDL").add_subparsers(dest="zcmd", required=True)

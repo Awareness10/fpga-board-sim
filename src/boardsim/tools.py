@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import ghdl, qemu, term
+from . import ghdl, installer, qemu, term
 
 ROOT = Path(__file__).resolve().parents[2]          # the repository checkout
 CONAN_PROFILES = ROOT / "conan" / "profiles"
@@ -30,6 +30,56 @@ def find_gtkwave():
         "win32": [r"C:\gtkwave\bin\gtkwave.exe", r"C:\msys64\ucrt64\bin\gtkwave.exe"],
         "darwin": ["/Applications/gtkwave.app/Contents/Resources/bin/gtkwave", "/opt/homebrew/bin/gtkwave"],
     }.get(sys.platform, []))
+
+
+# Surfer (https://surfer-project.org): a waveform viewer with official builds for Windows,
+# macOS (Apple Silicon) and Linux, which reads GHDL's .ghw files. GTKWave has no current
+# Windows or macOS builds (Homebrew dropped it).
+SURFER = "0.7.0"
+SURFER_URL = "https://gitlab.com/api/v4/projects/42073614/packages/generic/surfer/v{v}/{name}"
+SURFER_BUILDS = {   # (sys.platform, machine) -> (file, sha256)
+    ("win32", "amd64"): ("surfer_win_v{v}.zip", "4fbb0ad93e1aa958f6944c036a8d01b36b267a96e7f904683317235cd041fc24"),
+    ("darwin", "arm64"): ("surfer_macos-aarch64_v{v}.zip",
+                          "ad19c7ae9e8a0e663a1edc01ac0a5f4993ec18ef55e76a1ad35541d4ecf222ed"),
+    ("linux", "x86_64"): ("surfer_linux_v{v}.zip", "bfaa83a4b73e50ca3a4fd19d515b3beef34e781fa55765865bbcce696a183a4d"),
+}
+
+
+def surfer_dir():
+    return installer.data_dir() / f"surfer-{SURFER}"
+
+
+def find_surfer():
+    exe = surfer_dir() / ("surfer.exe" if sys.platform == "win32" else "surfer")
+    return find("surfer", "SURFER", [str(exe), "/opt/homebrew/bin/surfer"])
+
+
+def install_surfer(force=False):
+    import platform
+
+    exe = surfer_dir() / ("surfer.exe" if sys.platform == "win32" else "surfer")
+    if exe.exists() and not force:
+        print(term.ok(f"Surfer {SURFER} is already installed: ") + term.path(exe))
+        return exe
+    build = SURFER_BUILDS.get((sys.platform, platform.machine().lower()))
+    if not build:
+        raise SystemExit(f"No Surfer build for {sys.platform}/{platform.machine()}: "
+                         "see https://surfer-project.org, or use GTKWave.")
+    name, sha256 = build[0].format(v=SURFER), build[1]
+    installer.fetch(SURFER_URL.format(v=SURFER, name=name), sha256, surfer_dir(), executables=[exe.name])
+    if not exe.exists():
+        raise SystemExit(f"Unpacked {name}, but {exe} is missing.")
+    print(term.ok(f"Installed Surfer {SURFER}: ") + term.path(exe))
+    return exe
+
+
+def find_viewer():
+    """(kind, path): GTKWave if it's there (it opens the saved layouts in waves/), else Surfer."""
+    g = find_gtkwave()
+    if g:
+        return "gtkwave", g
+    s = find_surfer()
+    return ("surfer", s) if s else (None, None)
 
 
 def find_conan():
@@ -64,10 +114,10 @@ TOOLS = [
     # name, finder, needed for, install hint per platform
     ("qemu-system-arm", qemu.find_qemu, "Zybo: run ARM programs, board view", qemu.INSTALL_HINT),
     ("ghdl", ghdl.find_ghdl, "VHDL testbenches, Basys3 board view", ghdl.INSTALL_HINT),
-    ("gtkwave", find_gtkwave, "waveforms (optional)", {
-        "win32": "https://gtkwave.sourceforge.net (or the Surfer viewer: https://surfer-project.org)",
-        "darwin": "brew install --cask gtkwave   (or Surfer: https://surfer-project.org)",
-        "linux": "sudo apt install gtkwave   /   sudo pacman -S gtkwave",
+    ("waveform viewer", lambda: find_viewer()[1], "GTKWave or Surfer (optional)", {
+        "win32": "uv run boardsim install surfer",
+        "darwin": "uv run boardsim install surfer   (or: brew install surfer)",
+        "linux": "sudo apt install gtkwave   /   sudo pacman -S gtkwave   /   uv run boardsim install surfer",
     }),
     ("vivado", lambda: find_vivado(), "bitstreams, programming real boards (optional)", {
         "win32": "AMD Vivado 2023.2 (https://www.amd.com/en/products/software/adaptive-socs-and-fpgas/vivado.html)",

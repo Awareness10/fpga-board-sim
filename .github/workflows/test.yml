@@ -21,6 +21,9 @@ jobs:
       - name: Install GHDL (the way the README says)
         run: uv run boardsim install ghdl
 
+      - name: Install Surfer (checks the download; CI can't open the GUI)
+        run: uv run boardsim install surfer
+
       - name: Install QEMU (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y qemu-system-arm

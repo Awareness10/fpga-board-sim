@@ -22,17 +22,20 @@ run the same commands.
 
 ## Install
 
-You need **uv**, **QEMU** (Zybo) and **GHDL** (VHDL). GTKWave and Vivado/Vitis are optional.
-`boardsim install ghdl` downloads GHDL's official release build for your computer, checks
-it, and unpacks it into your user folder (`%LOCALAPPDATA%\boardsim` on Windows); nothing
-else is changed and no admin rights are needed.
+You need **uv**, **QEMU** (Zybo) and **GHDL** (VHDL). A waveform viewer and Vivado/Vitis are optional.
+`boardsim install ghdl` and `boardsim install surfer` download the official build for your
+computer, check it, and unpack it into your user folder (`%LOCALAPPDATA%\boardsim` on
+Windows); nothing else is changed and no admin rights are needed.
+[Surfer](https://surfer-project.org) is a modern waveform viewer; GTKWave no longer has
+current Windows or macOS builds. If both are installed, `wave` uses GTKWave, which also
+opens the saved signal layouts in `zybo/pl/waves/`.
 
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | uv | `winget install astral-sh.uv` | `brew install uv` | `curl -LsSf https://astral.sh/uv/install.sh \| sh` (or your package manager) |
 | QEMU | `winget install SoftwareFreedomConservancy.QEMU` | `brew install qemu` | `sudo apt install qemu-system-arm` · `sudo pacman -S qemu-system-arm` · `sudo dnf install qemu-system-arm` |
 | GHDL | `uv run boardsim install ghdl` | `uv run boardsim install ghdl` (Apple Silicon; needs `xcode-select --install`) | `sudo apt install ghdl` · `paru -S ghdl` (AUR) · or `uv run boardsim install ghdl` |
-| waveforms (optional) | [GTKWave](https://gtkwave.sourceforge.net) or [Surfer](https://surfer-project.org) | `brew install --cask gtkwave` or Surfer | `sudo apt install gtkwave` · `sudo pacman -S gtkwave` |
+| waveform viewer (optional) | `uv run boardsim install surfer` | `uv run boardsim install surfer` (or `brew install surfer`) | `sudo apt install gtkwave` · `sudo pacman -S gtkwave` · or `uv run boardsim install surfer` |
 | Vivado/Vitis 2023.2 (optional) | default `C:\Xilinx` | not available: use a Windows/Linux machine for this step | default `~/Xilinx`, `/tools/Xilinx` or `/opt/Xilinx` |
 
 Then, in a clone of this repository:
@@ -51,7 +54,7 @@ Install Python 3.10+ from [python.org](https://www.python.org/downloads/) or
 
 The first `uv run` creates a virtual environment with Conan in it. The first build
 downloads the Arm GNU toolchain (roughly 150 MB). `boardsim` finds QEMU, GHDL and Vivado
-in their usual install folders; set `QEMU`, `GHDL`, `GTKWAVE`, `XILINX_VIVADO` or
+in their usual install folders; set `QEMU`, `GHDL`, `GTKWAVE`, `SURFER`, `XILINX_VIVADO` or
 `XILINX_VITIS` if yours are somewhere else.
 
 ## Zybo Z7
@@ -61,7 +64,7 @@ uv run boardsim zybo run                  # xgpio_btns on the emulated board, in
 uv run boardsim zybo run xgpio_blink      # the tutorial's blinking LED
 uv run boardsim zybo run xgpio_btns --terminal    # no browser: keys 1-4 toggle BTN0-3
 uv run boardsim zybo test                 # PL testbenches + all programs in QEMU
-uv run boardsim zybo wave                 # zybo_gpio_tb in GTKWave
+uv run boardsim zybo wave                 # zybo_gpio_tb in GTKWave or Surfer
 ```
 
 The programs are in `zybo/ps/examples/`: `hello`, `asm_sum` (C calling assembly),
@@ -101,7 +104,7 @@ the same steps by hand in the GUI: [zybo/README.md](zybo/README.md).
 ```sh
 uv run boardsim basys3 run              # basys3_top on the emulated board, in the browser
 uv run boardsim basys3 test             # every testbench in basys3/tb/
-uv run boardsim basys3 wave counter_tb  # a testbench in GTKWave
+uv run boardsim basys3 wave counter_tb  # a testbench in GTKWave or Surfer
 uv run boardsim basys3 bit              # Vivado: bitstream
 uv run boardsim basys3 program          # Vivado: bitstream + program a connected Basys3
 ```

@@ -3,7 +3,7 @@
 ```sh
 uv run boardsim basys3 run              # basys3_top on the emulated board, in the browser
 uv run boardsim basys3 test             # every testbench in tb/
-uv run boardsim basys3 wave counter_tb  # a testbench in GTKWave
+uv run boardsim basys3 wave counter_tb  # a testbench in GTKWave or Surfer
 uv run boardsim basys3 bit              # Vivado: bitstream
 uv run boardsim basys3 program          # Vivado: bitstream + program a connected Basys3
 ```

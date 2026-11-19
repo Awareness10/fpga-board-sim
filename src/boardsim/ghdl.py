@@ -13,7 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import term
+from . import installer, term
 
 STD = "08"
 INSTALL_HINT = {
@@ -35,29 +35,13 @@ BUILDS = {   # (sys.platform, machine) -> (file, sha256)
 }
 
 
-def data_dir():
-    """Per-user folder for tools boardsim installs."""
-    if sys.platform == "win32":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-    elif sys.platform == "darwin":
-        base = Path.home() / "Library" / "Application Support"
-    else:
-        base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
-    return base / "boardsim"
-
-
 def installed_dir():
-    return data_dir() / f"ghdl-{RELEASE}"
+    return installer.data_dir() / f"ghdl-{RELEASE}"
 
 
 def install(force=False):
     """Download and unpack the GHDL release build for this computer. Returns ghdl's path."""
-    import hashlib
     import platform
-    import tarfile
-    import tempfile
-    import urllib.request
-    import zipfile
 
     exe = installed_dir() / "bin" / ("ghdl.exe" if sys.platform == "win32" else "ghdl")
     if exe.exists() and not force:
@@ -69,40 +53,7 @@ def install(force=False):
         raise SystemExit(f"No GHDL release build for {sys.platform}/{platform.machine()}. "
                          f"Install it another way: {hint.strip(' /') or 'https://github.com/ghdl/ghdl'}")
     name, sha256 = build[0].format(v=RELEASE), build[1]
-    url = RELEASE_URL.format(v=RELEASE, name=name)
-    data_dir().mkdir(parents=True, exist_ok=True)
-
-    with tempfile.TemporaryDirectory(dir=data_dir()) as tmp:
-        archive = Path(tmp) / name
-        print(f"Downloading {term.path(url)}")
-        h = hashlib.sha256()
-        with urllib.request.urlopen(url) as r, open(archive, "wb") as f:
-            total, done = int(r.headers.get("Content-Length", 0)), 0
-            while chunk := r.read(1 << 20):
-                f.write(chunk)
-                h.update(chunk)
-                done += len(chunk)
-                if total:
-                    print(f"\r  {done / 1e6:5.1f} / {total / 1e6:.1f} MB", end="", flush=True)
-        print()
-        if h.hexdigest() != sha256:
-            raise SystemExit(f"Checksum mismatch for {name}: download corrupted or changed. Nothing installed.")
-
-        unpacked = Path(tmp) / "unpacked"
-        if name.endswith(".zip"):
-            with zipfile.ZipFile(archive) as z:
-                z.extractall(unpacked)
-        else:
-            with tarfile.open(archive) as t:
-                kw = {"filter": "data"} if hasattr(tarfile, "data_filter") else {}
-                t.extractall(unpacked, **kw)
-        # The tarballs have one top folder, the Windows zip has bin/, lib/ at its root.
-        entries = list(unpacked.iterdir())
-        root = entries[0] if len(entries) == 1 and entries[0].is_dir() else unpacked
-        if installed_dir().exists():
-            shutil.rmtree(installed_dir())
-        shutil.move(str(root), str(installed_dir()))
-
+    installer.fetch(RELEASE_URL.format(v=RELEASE, name=name), sha256, installed_dir())
     if not exe.exists():
         raise SystemExit(f"Unpacked {name}, but {exe} is missing.")
     print(term.ok(f"Installed GHDL {RELEASE}: ") + term.path(exe))
