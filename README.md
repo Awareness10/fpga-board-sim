@@ -1,5 +1,7 @@
 # fpga-board-sim
 
+[![test](https://github.com/Awareness10/fpga-board-sim/actions/workflows/test.yml/badge.svg)](https://github.com/Awareness10/fpga-board-sim/actions/workflows/test.yml)
+
 Work with the Digilent **Zybo Z7** (Zynq-7000) and **Basys3** (Artix-7) boards without
 having the hardware on your desk, and use the same files with Vivado/Vitis when you do.
 Made for USN's *SW/HW co-design of embedded systems* course.
@@ -115,10 +117,14 @@ basys3/              VHDL designs, testbenches, constraints, Vivado script
 
 ## Status
 
-Developed and tested on Linux (Arch-based, Vivado/Vitis 2023.2): all tests, both board
-views, the Basys3 bitstream, and the Zybo `.xsa` and Vitis builds. Not yet tested:
-Windows and macOS (CI is set up for both in `.github/workflows/test.yml`), and
-`zybo jtag` / `basys3 program` on real boards. Reports and fixes are welcome.
+- **Linux** (Arch-based, Vivado/Vitis 2023.2): everything except the real boards: all
+  tests, both board views, the Basys3 bitstream, the Zybo `.xsa` and Vitis builds.
+- **Windows and macOS:** `boardsim test` passes in CI (`.github/workflows/test.yml`):
+  the Conan toolchain download, the ARM builds, QEMU and GHDL. The board views and the
+  Vivado/Vitis commands haven't been tried there by a person yet.
+- **Not yet tested:** `zybo jtag` and `basys3 program` on real boards.
+
+Reports and fixes are welcome.
 
 ## AI disclosure
 
