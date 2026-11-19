@@ -4,7 +4,7 @@
 
 Work with the Digilent **Zybo Z7** (Zynq-7000) and **Basys3** (Artix-7) boards without
 having the hardware on your desk, and use the same files with Vivado/Vitis when you do.
-Made for USN's *SW/HW co-design of embedded systems* course.
+Made for USN's course [CS4110-1 26H Hardware/Software Co-Design of Embedded Systems](https://www.usn.no/studier/studie-og-emneplaner/#/emne/CS4110_1_2026_H%C3%98ST).
 
 | | Zybo Z7 | Basys3 |
 |---|---|---|
