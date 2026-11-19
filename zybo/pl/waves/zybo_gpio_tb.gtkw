@@ -1,0 +1,65 @@
+[*] GTKWave save file for zybo_gpio_tb: opened by `boardsim zybo wave zybo_gpio_tb`.
+[*] Generated together with the other zybo_gpio*.gtkw from one signal list; keep them alike.
+[dumpfile] "build/zybo_gpio_tb.ghw"
+[timestart] 0
+*-28.000000 0 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[size] 1600 1000
+[sst_width] 0
+[signals_width] 300
+[sst_expanded] 0
+@200
+-clock, reset, phase
+@28
+top.zybo_gpio_tb.dut.s_axi_aclk
+@28
+top.zybo_gpio_tb.dut.s_axi_aresetn
+@24
+top.zybo_gpio_tb.phase
+@200
+-AXI write
+@22
+top.zybo_gpio_tb.dut.s_axi_awaddr[8:0]
+@28
+top.zybo_gpio_tb.dut.s_axi_awvalid
+@28
+top.zybo_gpio_tb.dut.s_axi_awready
+@22
+top.zybo_gpio_tb.dut.s_axi_wdata[31:0]
+@28
+top.zybo_gpio_tb.dut.s_axi_wvalid
+@28
+top.zybo_gpio_tb.dut.s_axi_wready
+@28
+top.zybo_gpio_tb.dut.s_axi_bvalid
+@28
+top.zybo_gpio_tb.dut.s_axi_bready
+@200
+-AXI read
+@22
+top.zybo_gpio_tb.dut.s_axi_araddr[8:0]
+@28
+top.zybo_gpio_tb.dut.s_axi_arvalid
+@28
+top.zybo_gpio_tb.dut.s_axi_arready
+@22
+top.zybo_gpio_tb.dut.s_axi_rdata[31:0]
+@28
+top.zybo_gpio_tb.dut.s_axi_rvalid
+@28
+top.zybo_gpio_tb.dut.s_axi_rready
+@200
+-axi_gpio_0 registers
+@22
+top.zybo_gpio_tb.dut.axi_gpio_0.dout1[31:0]
+@22
+top.zybo_gpio_tb.dut.axi_gpio_0.tri1[31:0]
+@22
+top.zybo_gpio_tb.dut.axi_gpio_0.pins2[31:0]
+@200
+-board
+@20
+top.zybo_gpio_tb.btn[3:0]
+@20
+top.zybo_gpio_tb.sw[3:0]
+@20
+top.zybo_gpio_tb.led[3:0]
