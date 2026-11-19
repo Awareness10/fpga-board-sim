@@ -21,12 +21,10 @@ def cmd_setup(args):
 
 def cmd_doctor(args):
     print(f"boardsim {__version__}, Python {sys.version.split()[0]} on {sys.platform}\n")
-    missing = 0
     for name, finder, purpose, hints in tools.TOOLS:
         path = finder()
         print(f"  {'ok ' if path else '-- '} {name:16s} {path or 'not found'}   ({purpose})")
         if not path:
-            missing += 1
             print(f"       install: {hints.get(sys.platform, hints['linux'])}")
     print("\n  The ARM compiler, CMake and Ninja are downloaded by Conan on the first build.")
     return 0
@@ -46,7 +44,8 @@ def zybo_profile(args):
 
 
 def ensure_built(args, prog):
-    if not zybo_elf(prog).exists() and tools.conan_build(tools.repo_dir(*ZYBO_PS), zybo_profile(args), test=False):
+    # Always (re)build: incremental, about a second, and your latest edits are what runs.
+    if tools.conan_build(tools.repo_dir(*ZYBO_PS), zybo_profile(args), test=False):
         raise SystemExit("build failed")
     if not zybo_elf(prog).exists():
         raise SystemExit(f"no program called {prog} (see zybo/ps/examples/)")
