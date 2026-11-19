@@ -1,0 +1,39 @@
+# Bare-metal Cortex-A9 (the Zynq-7000 PS on the Zybo Z7) with the Arm GNU Toolchain,
+# downloaded by Conan for your OS (conan/recipes/arm-gnu-toolchain). No OS, no libc.
+#
+#   conan build zybo/ps -pr:h conan/profiles/cortexa9-baremetal-gcc -pr:b default --build=missing
+#   (or: uv run boardsim zybo build)
+#
+# CPU flags match Xilinx's standalone BSP: ARM (not Thumb) code, hard-float VFPv3.
+{% set archflags = "-mcpu=cortex-a9 -mfpu=vfpv3 -mfloat-abi=hard -marm" %}
+
+[settings]
+os=baremetal
+arch=armv7hf
+compiler=gcc
+compiler.version=14
+# libcxx is required by Conan for gcc; C-only code ignores it
+compiler.libcxx=libstdc++11
+build_type=Debug
+
+[tool_requires]
+arm-gnu-toolchain/14.2.rel1
+cmake/[>=3.27 <5]
+ninja/[>=1.12 <2]
+
+[buildenv]
+CC=arm-none-eabi-gcc
+CXX=arm-none-eabi-g++
+AR=arm-none-eabi-ar
+OBJCOPY=arm-none-eabi-objcopy
+OBJDUMP=arm-none-eabi-objdump
+
+[conf]
+tools.cmake.cmaketoolchain:generator=Ninja
+tools.cmake.cmaketoolchain:system_name=Generic
+tools.cmake.cmaketoolchain:system_processor=arm
+tools.build:compiler_executables={"c": "arm-none-eabi-gcc", "cpp": "arm-none-eabi-g++", "asm": "arm-none-eabi-gcc"}
+tools.build:cflags=["{{ archflags }}"]
+tools.build:cxxflags=["{{ archflags }}"]
+tools.build:exelinkflags=["{{ archflags }}"]
+tools.cmake.cmaketoolchain:extra_variables={"CMAKE_ASM_FLAGS_INIT": "{{ archflags }}", "CMAKE_TRY_COMPILE_TARGET_TYPE": "STATIC_LIBRARY"}

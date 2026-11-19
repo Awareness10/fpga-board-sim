@@ -1,0 +1,38 @@
+# Same as cortexa9-baremetal-gcc, but with an arm-none-eabi-gcc you installed yourself
+# (distro package, Homebrew, or the one inside Vitis: <Vitis>/gnu/aarch32/<os>/gcc-arm-none-eabi/bin).
+# It must be on PATH, or set ARM_GNU_PREFIX to its full prefix, e.g.
+#   ARM_GNU_PREFIX=C:/Xilinx/Vitis/2023.2/gnu/aarch32/nt/gcc-arm-none-eabi/bin/arm-none-eabi-
+#
+#   uv run boardsim zybo build --system-toolchain
+{% set prefix = os.getenv("ARM_GNU_PREFIX", "arm-none-eabi-") %}
+{% set archflags = "-mcpu=cortex-a9 -mfpu=vfpv3 -mfloat-abi=hard -marm" %}
+
+[settings]
+os=baremetal
+arch=armv7hf
+compiler=gcc
+# Only a label here: nothing prebuilt is linked, so it needn't match your GCC.
+compiler.version=14
+compiler.libcxx=libstdc++11
+build_type=Debug
+
+[tool_requires]
+cmake/[>=3.27 <5]
+ninja/[>=1.12 <2]
+
+[buildenv]
+CC={{ prefix }}gcc
+CXX={{ prefix }}g++
+AR={{ prefix }}ar
+OBJCOPY={{ prefix }}objcopy
+OBJDUMP={{ prefix }}objdump
+
+[conf]
+tools.cmake.cmaketoolchain:generator=Ninja
+tools.cmake.cmaketoolchain:system_name=Generic
+tools.cmake.cmaketoolchain:system_processor=arm
+tools.build:compiler_executables={"c": "{{ prefix }}gcc", "cpp": "{{ prefix }}g++", "asm": "{{ prefix }}gcc"}
+tools.build:cflags=["{{ archflags }}"]
+tools.build:cxxflags=["{{ archflags }}"]
+tools.build:exelinkflags=["{{ archflags }}"]
+tools.cmake.cmaketoolchain:extra_variables={"CMAKE_ASM_FLAGS_INIT": "{{ archflags }}", "CMAKE_TRY_COMPILE_TARGET_TYPE": "STATIC_LIBRARY"}
