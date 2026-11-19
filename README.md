@@ -23,12 +23,15 @@ run the same commands.
 ## Install
 
 You need **uv**, **QEMU** (Zybo) and **GHDL** (VHDL). GTKWave and Vivado/Vitis are optional.
+`boardsim install ghdl` downloads GHDL's official release build for your computer, checks
+it, and unpacks it into your user folder (`%LOCALAPPDATA%\boardsim` on Windows); nothing
+else is changed and no admin rights are needed.
 
 | | Windows | macOS | Linux |
 |---|---|---|---|
 | uv | `winget install astral-sh.uv` | `brew install uv` | `curl -LsSf https://astral.sh/uv/install.sh \| sh` (or your package manager) |
 | QEMU | `winget install SoftwareFreedomConservancy.QEMU` | `brew install qemu` | `sudo apt install qemu-system-arm` · `sudo pacman -S qemu-system-arm` · `sudo dnf install qemu-system-arm` |
-| GHDL | zip from [GHDL releases](https://github.com/ghdl/ghdl/releases) (`bin/` on `PATH`), or MSYS2: `pacman -S mingw-w64-ucrt-x86_64-ghdl-llvm` | tarball from [GHDL releases](https://github.com/ghdl/ghdl/releases) (`bin/` on `PATH`) | `sudo apt install ghdl` · `paru -S ghdl` (AUR) |
+| GHDL | `uv run boardsim install ghdl` | `uv run boardsim install ghdl` (Apple Silicon; needs `xcode-select --install`) | `sudo apt install ghdl` · `paru -S ghdl` (AUR) · or `uv run boardsim install ghdl` |
 | waveforms (optional) | [GTKWave](https://gtkwave.sourceforge.net) or [Surfer](https://surfer-project.org) | `brew install --cask gtkwave` or Surfer | `sudo apt install gtkwave` · `sudo pacman -S gtkwave` |
 | Vivado/Vitis 2023.2 (optional) | default `C:\Xilinx` | not available: use a Windows/Linux machine for this step | default `~/Xilinx`, `/tools/Xilinx` or `/opt/Xilinx` |
 

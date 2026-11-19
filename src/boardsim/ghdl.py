@@ -15,11 +15,96 @@ from pathlib import Path
 
 STD = "08"
 INSTALL_HINT = {
-    "win32": "download the mingw64/ucrt64 zip from https://github.com/ghdl/ghdl/releases and put its bin/ on PATH,\n"
-             "  or in MSYS2: pacman -S mingw-w64-ucrt-x86_64-ghdl-llvm",
-    "darwin": "download the macOS tarball from https://github.com/ghdl/ghdl/releases and put its bin/ on PATH",
-    "linux": "sudo apt install ghdl   /   paru -S ghdl (Arch, AUR)   /   https://github.com/ghdl/ghdl/releases",
+    "win32": "uv run boardsim install ghdl",
+    "darwin": "uv run boardsim install ghdl   (Apple Silicon; needs the Xcode command line tools: xcode-select --install)",
+    "linux": "sudo apt install ghdl   /   paru -S ghdl (Arch, AUR)   /   uv run boardsim install ghdl",
 }
+
+# --- Installing GHDL: the official release builds, checked against their SHA-256 ----------
+RELEASE = "6.0.0"
+RELEASE_URL = "https://github.com/ghdl/ghdl/releases/download/v{v}/{name}"
+BUILDS = {   # (sys.platform, machine) -> (file, sha256)
+    ("win32", "amd64"): ("ghdl-mcode-{v}-ucrt64.zip",
+                         "76e160ceec35834c73ada6e4e484416d13aed4b64cbc7c74c5cca53a7ef60e41"),
+    ("darwin", "arm64"): ("ghdl-llvm-{v}-macos14-aarch64.tar.gz",
+                          "9cb3ccc09ca95f37c88bb757b3da7415ce5efede51e136e0262c74f3f99c2245"),
+    ("linux", "x86_64"): ("ghdl-mcode-{v}-ubuntu24.04-x86_64.tar.gz",
+                          "30d6a977b8456d140bbafecbbe64b1947a3d92eeae8f5e6d9f528a174f9566e7"),
+}
+
+
+def data_dir():
+    """Per-user folder for tools boardsim installs."""
+    if sys.platform == "win32":
+        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
+    return base / "boardsim"
+
+
+def installed_dir():
+    return data_dir() / f"ghdl-{RELEASE}"
+
+
+def install(force=False):
+    """Download and unpack the GHDL release build for this computer. Returns ghdl's path."""
+    import hashlib
+    import platform
+    import tarfile
+    import tempfile
+    import urllib.request
+    import zipfile
+
+    exe = installed_dir() / "bin" / ("ghdl.exe" if sys.platform == "win32" else "ghdl")
+    if exe.exists() and not force:
+        print(f"GHDL {RELEASE} is already installed: {exe}")
+        return exe
+    build = BUILDS.get((sys.platform, platform.machine().lower()))
+    if not build:
+        hint = INSTALL_HINT.get(sys.platform, INSTALL_HINT["linux"]).replace("uv run boardsim install ghdl", "")
+        raise SystemExit(f"No GHDL release build for {sys.platform}/{platform.machine()}. "
+                         f"Install it another way: {hint.strip(' /') or 'https://github.com/ghdl/ghdl'}")
+    name, sha256 = build[0].format(v=RELEASE), build[1]
+    url = RELEASE_URL.format(v=RELEASE, name=name)
+    data_dir().mkdir(parents=True, exist_ok=True)
+
+    with tempfile.TemporaryDirectory(dir=data_dir()) as tmp:
+        archive = Path(tmp) / name
+        print(f"Downloading {url}")
+        h = hashlib.sha256()
+        with urllib.request.urlopen(url) as r, open(archive, "wb") as f:
+            total, done = int(r.headers.get("Content-Length", 0)), 0
+            while chunk := r.read(1 << 20):
+                f.write(chunk)
+                h.update(chunk)
+                done += len(chunk)
+                if total:
+                    print(f"\r  {done / 1e6:5.1f} / {total / 1e6:.1f} MB", end="", flush=True)
+        print()
+        if h.hexdigest() != sha256:
+            raise SystemExit(f"Checksum mismatch for {name}: download corrupted or changed. Nothing installed.")
+
+        unpacked = Path(tmp) / "unpacked"
+        if name.endswith(".zip"):
+            with zipfile.ZipFile(archive) as z:
+                z.extractall(unpacked)
+        else:
+            with tarfile.open(archive) as t:
+                kw = {"filter": "data"} if hasattr(tarfile, "data_filter") else {}
+                t.extractall(unpacked, **kw)
+        # The tarballs have one top folder, the Windows zip has bin/, lib/ at its root.
+        entries = list(unpacked.iterdir())
+        root = entries[0] if len(entries) == 1 and entries[0].is_dir() else unpacked
+        if installed_dir().exists():
+            shutil.rmtree(installed_dir())
+        shutil.move(str(root), str(installed_dir()))
+
+    if not exe.exists():
+        raise SystemExit(f"Unpacked {name}, but {exe} is missing.")
+    print(f"Installed GHDL {RELEASE}: {exe}")
+    return exe
 
 
 def find_ghdl():
@@ -28,11 +113,12 @@ def find_ghdl():
     found = shutil.which("ghdl")
     if found:
         return found
-    candidates = {
+    candidates = [installed_dir() / "bin" / ("ghdl.exe" if sys.platform == "win32" else "ghdl")]
+    candidates += [Path(c) for c in {
         "win32": [r"C:\msys64\ucrt64\bin\ghdl.exe", r"C:\msys64\mingw64\bin\ghdl.exe", r"C:\ghdl\bin\ghdl.exe"],
         "darwin": ["/opt/homebrew/bin/ghdl", "/usr/local/bin/ghdl"],
-    }.get(sys.platform, [])
-    return next((c for c in candidates if os.path.isfile(c)), None)
+    }.get(sys.platform, [])]
+    return next((str(c) for c in candidates if c.is_file()), None)
 
 
 def require_ghdl():

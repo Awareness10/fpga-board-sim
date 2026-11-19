@@ -19,6 +19,11 @@ def cmd_setup(args):
     return 0
 
 
+def cmd_install(args):
+    ghdl.install(force=args.force)
+    return 0
+
+
 def cmd_doctor(args):
     print(f"boardsim {__version__}, Python {sys.version.split()[0]} on {sys.platform}\n")
     for name, finder, purpose, hints in tools.TOOLS:
@@ -197,6 +202,10 @@ def main(argv=None):
     p.add_argument("--system-toolchain", action="store_true", help="use your own arm-none-eabi-gcc")
     p.set_defaults(fn=cmd_test)
 
+    p = sub.add_parser("install", help="download a tool for you (GHDL's official release build)")
+    p.add_argument("tool", choices=["ghdl"])
+    p.add_argument("--force", action="store_true", help="download again even if it is installed")
+    p.set_defaults(fn=cmd_install)
     zybo = sub.add_parser("zybo", help="Zybo Z7 (Zynq-7000): ARM in QEMU, PL in GHDL").add_subparsers(dest="zcmd", required=True)
     p = zybo.add_parser("build", help="build the ARM programs (and run them as tests)")
     p.add_argument("--no-test", action="store_true")

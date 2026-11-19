@@ -11,23 +11,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            ghdl: mcode
-          - os: windows-latest
-            ghdl: mcode
-          - os: macos-latest      # Apple Silicon: GHDL's mcode backend is x86 only
-            ghdl: llvm
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v5
 
-      - uses: ghdl/setup-ghdl@v1
-        with:
-          backend: ${{ matrix.ghdl }}
-          investigate: true
+      - name: Install GHDL (the way the README says)
+        run: uv run boardsim install ghdl
 
       - name: Install QEMU (Linux)
         if: runner.os == 'Linux'
