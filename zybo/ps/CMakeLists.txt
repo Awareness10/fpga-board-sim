@@ -72,3 +72,35 @@ zynq_program(hello    examples/hello/main.c)
 zynq_program(asm_sum  examples/asm_sum/main.c examples/asm_sum/sum.S)
 zynq_program(axi_leds examples/axi_leds/main.c)
 # Add your own: zynq_program(myprog examples/myprog/main.c)
+
+# --- Peronnin tutorial: Xilinx's xgpio_example.c on a model of the Zybo ---
+# xil/   = stand-ins for the Vitis BSP headers (xgpio.h, xparameters.h, xil_io.h, ...)
+# model/ = the PL design (AXI GPIO -> LEDs / buttons) in C, since QEMU has no FPGA
+add_library(zybo_model STATIC xil/xgpio.c model/zybo_board.c)
+target_include_directories(zybo_model PUBLIC xil)
+# SDT: Vitis 2023.2's unified IDE builds with the system-device-tree driver API.
+target_compile_definitions(zybo_model PUBLIC ZYBO_BOARD_MODEL=1 SDT)
+target_link_libraries(zybo_model PUBLIC bsp)
+
+# zybo_board_program(<name> <source> KEYS <keys> EXPECT <regex>)
+#   Like zynq_program, but linked with the board model. The ctest types KEYS into the UART
+#   (1-4 toggle BTN0-3, 5-8 SW0-3, . waits, q quits) and passes if the output matches
+#   EXPECT (the [zybo] board lines) and the program exits with 0.
+function(zybo_board_program name source)
+    cmake_parse_arguments(ARG "" "KEYS;EXPECT" "" ${ARGN})
+    zynq_program(${name} ${source} NO_TEST)
+    target_link_libraries(${name} PRIVATE zybo_model)
+    add_test(NAME ${name}
+        COMMAND ${Python3_EXECUTABLE} ${QEMU_RUN} $<TARGET_FILE:${name}>
+                --keys "${ARG_KEYS}" --expect "${ARG_EXPECT}" --timeout 20)
+endfunction()
+
+# Steps 14-17: the example as imported. Expect LD0 on, off, on.
+zybo_board_program(xgpio_blink examples/xgpio_blink/xgpio_example.c
+    KEYS "..q"
+    EXPECT "LD3..LD0 \\.\\.\\.\\*.*LD3..LD0 \\.\\.\\.\\..*LD3..LD0 \\.\\.\\.\\*.*quit")
+# Step 18: buttons copied to the LEDs. Press BTN0, BTN1, BTN3, release BTN0; then flip SW0,
+# which isn't wired to the GPIO, so the LEDs stay as they are.
+zybo_board_program(xgpio_btns examples/xgpio_btns/xgpio_example.c
+    KEYS "1.2.4.1.5.q"
+    EXPECT "LD3..LD0 \\.\\.\\.\\*.*LD3..LD0 \\.\\.\\*\\*.*LD3..LD0 \\*\\.\\*\\*.*LD3..LD0 \\*\\.\\*\\.   BTN3..BTN0 #\\.#\\.   SW3..SW0 \\.\\.\\.\\..*LD3..LD0 \\*\\.\\*\\.   BTN3..BTN0 #\\.#\\.   SW3..SW0 \\.\\.\\.#.*quit")
