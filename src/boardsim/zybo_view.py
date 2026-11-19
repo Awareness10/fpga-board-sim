@@ -47,7 +47,7 @@ class Board:
         # can't emulate the CPU at the -icount speed. Up to a couple of seconds happens at
         # every startup and is caught up again: noise. More than that means it keeps falling
         # behind, so timing (e.g. the blink) gets slower than on the board.
-        if not line or "waiting for connection" in line:
+        if not line:
             return
         late = LATE.search(line)
         if late:

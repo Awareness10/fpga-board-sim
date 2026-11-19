@@ -6,8 +6,10 @@
     python qemu.py prog.elf --interactive            type lines, they go to the UART
 
 UART1 (the Zybo's USB-UART) is a TCP socket on 127.0.0.1 instead of QEMU's stdio:
-pipes into QEMU behave differently on Windows, a socket is the same everywhere. QEMU
-waits for the connection before it starts the CPU, so no output is lost. Semihosting
+pipes into QEMU behave differently on Windows, a socket is the same everywhere. We listen
+and QEMU connects as a client: on Windows, ports that look free can be reserved (Hyper-V,
+WSL2, Docker) and QEMU can't bind them, while a port the OS gives us is always usable.
+QEMU connects before it starts the CPU, so no output is lost. Semihosting
 turns the program's exit(code) into QEMU's exit status.
 
 Standard library only: CMake's ctest runs this file directly with any Python 3.
@@ -58,12 +60,6 @@ def shell_line(cmd):
     return shlex.join(str(c) for c in cmd)
 
 
-def free_port():
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
-
-
 class Qemu:
     """One QEMU process with UART1 on a socket. read() / send() / wait()."""
 
@@ -72,8 +68,11 @@ class Qemu:
         if not qemu:
             hint = INSTALL_HINT.get(sys.platform, INSTALL_HINT["linux"])
             raise SystemExit(f"qemu-system-arm not found. Install it: {hint}\n(or set QEMU=/path/to/qemu-system-arm)")
-        port = free_port()
-        cmd = [qemu, *MACHINE, "-serial", f"tcp:127.0.0.1:{port},server=on,wait=on", "-kernel", elf]
+        self.listener = socket.socket()
+        self.listener.bind(("127.0.0.1", 0))      # the OS picks a port that is really free
+        self.listener.listen(1)
+        port = self.listener.getsockname()[1]
+        cmd = [qemu, *MACHINE, "-serial", f"tcp:127.0.0.1:{port}", "-kernel", elf]
         if icount_shift is not None:
             # 2^shift ns per instruction, kept in step with the wall clock
             cmd += ["-icount", f"shift={icount_shift},align=on"]
@@ -83,6 +82,7 @@ class Qemu:
             self.proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                          stderr=subprocess.STDOUT, creationflags=flags)
         except OSError as e:
+            self.listener.close()
             hint = ""
             if sys.platform == "win32":
                 hint = ("\nWindows refused to start it. If it says the file is blocked (Smart App Control, "
@@ -94,20 +94,23 @@ class Qemu:
         threading.Thread(target=self._drain, daemon=True).start()
         self.sock = None
         deadline = time.time() + 10
+        self.listener.settimeout(0.1)
         while self.sock is None:
             try:
-                self.sock = socket.create_connection(("127.0.0.1", port), timeout=1)
+                self.sock, _ = self.listener.accept()
             except OSError:
                 code = self.proc.poll()
                 if code is not None or time.time() > deadline:
+                    self.listener.close()
                     if code is None:
                         self.proc.kill()
                     time.sleep(0.2)              # let _drain pick up QEMU's last words
                     out = b"".join(self.messages).decode(errors="replace").strip()
-                    why = f"exited with code {code}" if code is not None else "never opened its UART socket (10 s)"
+                    why = f"exited with code {code}" if code is not None else "never connected its UART (10 s)"
                     raise SystemExit(f"QEMU did not start: it {why}.\n  command: {shell_line(cmd)}\n"
                                      f"  QEMU said: {out or '(nothing)'}")
                 time.sleep(0.05)
+        self.listener.close()
         self.sock.settimeout(None)
 
     def _drain(self):
