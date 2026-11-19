@@ -119,6 +119,20 @@ def cmd_basys3_wave(args):
     return open_wave(basys3_dir(args), args.testbench, shared_sim)
 
 
+def cmd_basys3_run(args):
+    from . import basys3_view
+    generics = {}
+    for g in args.generic or []:
+        k, sep, v = g.partition("=")
+        if not sep:
+            raise SystemExit(f"--generic {g}: expected NAME=VALUE")
+        generics[k] = v
+    shared_sim = [tools.repo_dir("basys3", "sim")] if args.dir else []
+    return basys3_view.run(basys3_dir(args), args.top, shared_sim, generics, clk_hz=args.clk_hz,
+                           frame_ms=args.frame_ms, realtime=not args.max_speed, port=args.port,
+                           open_browser=not args.no_browser)
+
+
 def vivado_basys3(args, program):
     vivado = tools.require(tools.find_vivado(), "Vivado")
     cmd = [vivado, "-mode", "batch", "-nojournal", "-nolog", "-source", tools.repo_dir("basys3", "vivado", "build.tcl"),
@@ -185,6 +199,16 @@ def main(argv=None):
     p.add_argument("testbench", nargs="?", default="basys3_top_tb")
     p.add_argument("--dir", help=dir_help)
     p.set_defaults(fn=cmd_basys3_wave)
+    p = basys3.add_parser("run", help="run your design on the emulated board (browser board view)")
+    p.add_argument("--top", default="basys3_top", help="top entity (ports named as in the Basys3 master XDC)")
+    p.add_argument("--dir", help=dir_help)
+    p.add_argument("--generic", "-g", action="append", metavar="NAME=VALUE", help="override a generic of the top entity")
+    p.add_argument("--clk-hz", type=float, help="simulated clock (default: 250 kHz if the top has a CLK_HZ generic, else 100 MHz)")
+    p.add_argument("--frame-ms", type=float, default=10.0, help="simulated time per screen update (default 10)")
+    p.add_argument("--max-speed", action="store_true", help="don't slow down to real time when the simulation is faster")
+    p.add_argument("--port", type=int, default=8738)
+    p.add_argument("--no-browser", action="store_true", help="don't open a browser")
+    p.set_defaults(fn=cmd_basys3_run)
     for name, fn, text in (("bit", cmd_basys3_bit, "Vivado: build the bitstream"),
                            ("program", cmd_basys3_program, "Vivado: build and load it onto a connected Basys3")):
         p = basys3.add_parser(name, help=text)

@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Basys3 Board View</title>
+<style>
+:root {
+  --bg: #0d1014;
+  --panel: #151a21;
+  --panel-2: #1b212a;
+  --line: #262e39;
+  --text: #e6ebf2;
+  --muted: #8a96a8;
+  --faint: #566275;
+  --pcb: #12161b;
+  --pcb-edge: #2a313b;
+  --silk: #c9d1dc;
+  --lit: #4ade80;
+  --led-on: #5dff8f;
+  --led-off: #1b2a20;
+  --seg-on: #ff4d3d;
+  --seg-off: #2a1513;
+  --axi: #60a5fa;
+  --mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { display: flex; align-items: center; gap: 16px; padding: 14px 20px;
+  border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: .2px; }
+.chip { font: 12px var(--mono); padding: 3px 9px; border-radius: 999px;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
+.chip b { color: var(--text); font-weight: 600; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--faint); margin-right: 6px; vertical-align: 1px; }
+.running .status-dot { background: var(--lit); box-shadow: 0 0 8px var(--lit); }
+.spacer { flex: 1; }
+button.act { font: inherit; font-size: 13px; color: var(--text); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+button.act:hover { border-color: var(--faint); }
+button.act.danger { color: #fca5a5; }
+
+main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; padding: 16px 20px 24px; }
+@media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+.board-wrap { background: radial-gradient(1200px 600px at 40% 30%, #161c24, var(--bg));
+  border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+svg#board { width: 100%; height: auto; display: block; user-select: none; -webkit-user-select: none; }
+.hint { color: var(--muted); font-size: 12.5px; padding: 6px 8px 2px; }
+kbd { font: 11.5px var(--mono); background: var(--panel-2); border: 1px solid var(--line);
+  border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; color: var(--text); }
+
+aside { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  margin: 0 0 10px; font-weight: 600; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.stat .k { color: var(--muted); font-size: 11.5px; }
+.stat .v { font: 600 18px var(--mono); font-variant-numeric: tabular-nums; }
+.note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12.5px; }
+.kv .k { color: var(--muted); }
+.kv .v { font-family: var(--mono); word-break: break-word; }
+.console { background: #0a0d10; border: 1px solid var(--line); border-radius: 8px; height: 180px;
+  overflow: auto; padding: 8px 10px; font: 12px/1.5 var(--mono); color: #cfe3d6; white-space: pre-wrap; }
+.console .empty { color: var(--faint); }
+
+/* --- SVG board --- */
+.silk { fill: var(--silk); font-family: system-ui, sans-serif; }
+.silk-m { fill: var(--silk); font-family: var(--mono); }
+.dimtext { fill: #5d6879; font-size: 10px; font-family: system-ui, sans-serif; }
+.led-body { fill: var(--led-off); stroke: #33463a; stroke-width: 1; }
+.led-glow { fill: var(--led-on); opacity: 0; transition: opacity .05s; }
+.seg { fill: var(--seg-off); transition: fill .04s; }
+.seg.on { fill: var(--seg-on); filter: url(#segGlow); }
+.btn { cursor: pointer; outline: none; }
+.btn .cap { fill: #20252c; stroke: #3b434e; stroke-width: 1.5; }
+.btn .cap-top { fill: url(#capGrad); pointer-events: none; }
+.btn.pressed .cap, .btn.pressed .cap-top { transform: translateY(1.5px) scale(.94); transform-box: fill-box; transform-origin: center; }
+.btn.pressed .base { stroke: var(--lit); stroke-width: 2; }
+.btn.unused, .sw.unused { opacity: .35; }
+.sw { cursor: pointer; outline: none; }
+.sw .knob { fill: #e5e7eb; stroke: #9ca3af; transition: transform .1s ease; }
+.btn:focus-visible .base, .sw:focus-visible .slot { stroke: var(--axi); stroke-width: 2; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Basys3 · board view</h1>
+  <span class="chip" id="top">design <b>…</b></span>
+  <span class="chip" id="run"><span class="status-dot"></span><span id="runtxt">connecting…</span></span>
+  <span class="chip" id="clk">clock <b>…</b></span>
+  <span class="spacer"></span>
+  <button class="act" id="reset" title="Restart the simulation from time 0 (like reprogramming the FPGA)">↻ Restart</button>
+  <button class="act danger" id="quit" title="Stop GHDL and this server">Quit</button>
+</header>
+
+<main>
+  <section class="board-wrap">
+    <svg id="board" viewBox="0 0 1000 600" role="img" aria-label="Basys3 board">
+      <defs>
+        <radialGradient id="capGrad" cx="40%" cy="35%" r="70%">
+          <stop offset="0" stop-color="#4b5563"/><stop offset="1" stop-color="#1f2937"/>
+        </radialGradient>
+        <filter id="segGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.2" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="ledGlow" x="-150%" y="-150%" width="400%" height="400%">
+          <feGaussianBlur stdDeviation="4"/>
+        </filter>
+      </defs>
+      <rect x="10" y="10" width="980" height="580" rx="22" fill="var(--pcb)" stroke="var(--pcb-edge)" stroke-width="2"/>
+      <g fill="#0b0e12" stroke="#2a313b">
+        <circle cx="38" cy="38" r="9"/><circle cx="962" cy="38" r="9"/>
+        <circle cx="38" cy="562" r="9"/><circle cx="962" cy="562" r="9"/>
+      </g>
+      <text x="60" y="64" class="silk" font-size="26" font-weight="800" letter-spacing="3">BASYS 3</text>
+      <text x="62" y="84" class="dimtext">Digilent · Artix-7 FPGA trainer board</text>
+
+      <!-- FPGA -->
+      <g transform="translate(70,130)">
+        <rect width="150" height="150" rx="8" fill="#1a1f26" stroke="#3a424d"/>
+        <rect x="14" y="14" width="122" height="122" rx="4" fill="#232a33"/>
+        <text x="75" y="66" text-anchor="middle" class="silk" font-size="13" font-weight="700">ARTIX-7</text>
+        <text x="75" y="86" text-anchor="middle" class="silk-m" font-size="10">XC7A35T</text>
+        <text x="75" y="104" text-anchor="middle" class="dimtext" id="fpgaTop">…</text>
+      </g>
+      <text x="145" y="304" text-anchor="middle" class="dimtext">clk = <tspan id="clkLabel">100 MHz</tspan></text>
+
+      <!-- 7-segment display, digits left to right = an(3) .. an(0) -->
+      <g transform="translate(330,110)">
+        <rect x="-18" y="-18" width="376" height="186" rx="10" fill="#0a0b0d" stroke="#2c323b"/>
+        <g id="digits"></g>
+      </g>
+      <text x="508" y="300" text-anchor="middle" class="dimtext">AN3 · AN2 · AN1 · AN0   (seg, dp, an: active low)</text>
+
+      <!-- buttons in a cross -->
+      <g id="buttons" transform="translate(830,195)"></g>
+
+      <!-- LEDs and switches: LD15/SW15 at the left -->
+      <g id="leds" transform="translate(70,360)"></g>
+      <g id="switches" transform="translate(70,415)"></g>
+    </svg>
+    <div class="hint">
+      Click the switches and buttons, or use the keys: <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> = BTNU/L/D/R,
+      <kbd>Space</kbd> = BTNC (hold), <kbd>Shift</kbd>+click a button to latch it.
+      Greyed-out parts are not ports of your design.
+    </div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h2>Simulation</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">simulated time</div><div class="v" id="simt">–</div></div>
+        <div class="stat"><div class="k">speed vs. real board</div><div class="v" id="speed">–</div></div>
+      </div>
+      <div class="note" id="speednote"></div>
+    </div>
+    <div class="card">
+      <h2>Design</h2>
+      <div class="kv">
+        <span class="k">top entity</span><span class="v" id="kvTop">–</span>
+        <span class="k">board ports</span><span class="v" id="kvPorts">–</span>
+        <span class="k">generics</span><span class="v" id="kvGen">–</span>
+        <span class="k">LEDs</span><span class="v" id="kvLed">–</span>
+        <span class="k">switches</span><span class="v" id="kvSw">–</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>GHDL console (report / assert)</h2>
+      <div class="console" id="console"><span class="empty">nothing yet</span></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs = {}, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const post = (path, body = "") => fetch(path, { method: "POST", body }).catch(() => {});
+
+// --- 7-segment digits: segment polygons for a, b, c, d, e, f, g, plus dp ---
+const W = 58, H = 116, T = 11;     // digit width, height, segment thickness
+function segPolys() {
+  const h = (x, y, len) => `${x},${y} ${x + T / 2},${y - T / 2} ${x + len - T / 2},${y - T / 2} ${x + len},${y} ${x + len - T / 2},${y + T / 2} ${x + T / 2},${y + T / 2}`;
+  const v = (x, y, len) => `${x},${y} ${x + T / 2},${y + T / 2} ${x + T / 2},${y + len - T / 2} ${x},${y + len} ${x - T / 2},${y + len - T / 2} ${x - T / 2},${y + T / 2}`;
+  const m = H / 2;
+  return [h(4, 4, W - 8), v(W - 4, 6, m - 8), v(W - 4, m + 2, m - 8), h(4, H - 4, W - 8),
+          v(4, m + 2, m - 8), v(4, 6, m - 8), h(4, m, W - 8)];
+}
+const digitSegs = [];   // digitSegs[d][0..7], d = 0 for an(0) (rightmost)
+(function buildDigits() {
+  const g = $("digits"), polys = segPolys();
+  for (let i = 0; i < 4; i++) {           // i = position from the left: an(3 - i)
+    const d = 3 - i, dg = el("g", { transform: `translate(${i * 86 + 6},16) skewX(-6)` }, g);
+    const segs = polys.map((p) => el("polygon", { points: p, class: "seg" }, dg));
+    segs.push(el("circle", { cx: W + 9, cy: H - 4, r: 6, class: "seg" }, dg));
+    digitSegs[d] = segs;
+  }
+})();
+
+// --- LEDs and switches ---
+const leds = [], sws = [];
+(function buildIo() {
+  const gl = $("leds"), gs = $("switches"), pitch = 54;
+  for (let i = 0; i < 16; i++) {          // i from the left: index 15 - i
+    const k = 15 - i, x = i * pitch + 20;
+    const g = el("g", {}, gl);
+    el("circle", { cx: x, cy: 0, r: 13, class: "led-glow", filter: "url(#ledGlow)" }, g);
+    el("rect", { x: x - 7, y: -5, width: 14, height: 10, rx: 2, class: "led-body" }, g);
+    const glow = el("rect", { x: x - 7, y: -5, width: 14, height: 10, rx: 2, class: "led-glow" }, g);
+    el("text", { x, y: 24, "text-anchor": "middle", class: "dimtext" }, g).textContent = `LD${k}`;
+    leds[k] = { halo: g.firstChild, glow };
+
+    const s = el("g", { class: "sw", tabindex: 0, role: "switch", "aria-label": `SW${k}` }, gs);
+    el("rect", { x: x - 12, y: 0, width: 24, height: 58, rx: 4, fill: "#0b0e12", stroke: "#39414c", class: "slot" }, s);
+    const knob = el("rect", { x: x - 9, y: 32, width: 18, height: 22, rx: 3, class: "knob" }, s);
+    el("text", { x, y: 78, "text-anchor": "middle", class: "dimtext" }, s).textContent = `SW${k}`;
+    s.addEventListener("click", () => toggleSw(k));
+    s.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSw(k); } });
+    sws[k] = { g: s, knob };
+  }
+  el("text", { x: 20, y: 110, class: "dimtext" }, gs).textContent = "switch up = '1'";
+})();
+
+// --- Buttons: bit 0 = C, 1 = U, 2 = L, 3 = R, 4 = D ---
+const BTN = [["C", 0, 0], ["U", 0, -78], ["L", -78, 0], ["R", 78, 0], ["D", 0, 78]];
+const btns = [];
+(function buildButtons() {
+  const gb = $("buttons");
+  BTN.forEach(([name, x, y], bit) => {
+    const g = el("g", { class: "btn", transform: `translate(${x},${y})`, tabindex: 0, role: "button", "aria-label": `BTN${name}` }, gb);
+    el("rect", { x: -26, y: -26, width: 52, height: 52, rx: 8, fill: "#0b0e12", stroke: "#39414c", class: "base" }, g);
+    el("circle", { r: 17, class: "cap" }, g);
+    el("circle", { r: 12, class: "cap-top" }, g);
+    el("text", { y: 44, "text-anchor": "middle", class: "dimtext" }, g).textContent = `BTN${name}`;
+    const press = (e) => { e.preventDefault(); if (e.shiftKey) { latched ^= 1 << bit; } held |= 1 << bit; send(); };
+    const release = () => { held &= ~(1 << bit); send(); };
+    g.addEventListener("pointerdown", (e) => { g.setPointerCapture(e.pointerId); press(e); });
+    g.addEventListener("pointerup", release);
+    g.addEventListener("pointercancel", release);
+    btns[bit] = g;
+  });
+})();
+
+let sw = 0, held = 0, latched = 0, ports = null, clkHz = 100e6;
+function send() {
+  post("/input", `${sw} ${held | latched}`);
+  drawInputs();
+}
+function toggleSw(k) { sw ^= 1 << k; send(); }
+function drawInputs() {
+  for (let k = 0; k < 16; k++) sws[k].knob.setAttribute("transform", (sw >> k) & 1 ? "translate(0,-28)" : "");
+  btns.forEach((g, bit) => g.classList.toggle("pressed", !!(((held | latched) >> bit) & 1)));
+}
+const KEYS = { ArrowUp: 1, ArrowLeft: 2, ArrowRight: 3, ArrowDown: 4, " ": 0 };
+addEventListener("keydown", (e) => {
+  if (e.repeat || !(e.key in KEYS) || e.target.closest?.(".sw")) return;
+  e.preventDefault(); held |= 1 << KEYS[e.key]; send();
+});
+addEventListener("keyup", (e) => {
+  if (!(e.key in KEYS)) return;
+  held &= ~(1 << KEYS[e.key]); send();
+});
+
+// --- Rendering state from the simulator ---
+const lastSeen = [0, 0, 0, 0], lastPattern = [0, 0, 0, 0];
+function render(st) {
+  for (let k = 0; k < 16; k++) {
+    const duty = parseInt(st.led[15 - k], 16) / 15;
+    leds[k].glow.style.opacity = duty;
+    leds[k].halo.style.opacity = duty * 0.9;
+  }
+  const now = performance.now();
+  for (let d = 0; d < 4; d++) {
+    const duty = parseInt(st.dig[3 - d], 16);
+    const bits = parseInt(st.seg.substr((3 - d) * 2, 2), 16);
+    if (duty > 0) { lastSeen[d] = now; lastPattern[d] = bits; }
+    // A multiplexed digit isn't lit in every frame: keep showing it briefly (persistence of vision)
+    const show = now - lastSeen[d] < 250 ? lastPattern[d] : 0;
+    digitSegs[d].forEach((s, i) => s.classList.toggle("on", !!((show >> i) & 1)));
+  }
+  $("simt").textContent = fmtTime(st.us);
+  const pct = st.speed * 100;
+  $("speed").textContent = pct >= 99.5 ? "real time" : pct >= 10 ? `${pct.toFixed(0)} %` : `${pct.toFixed(1)} %`;
+  $("speednote").textContent = pct >= 99.5 ? "Capped at real time, like the board." :
+    "GHDL can't keep up with the clock: everything happens slower than on the board." +
+    (!clkHz ? "" : clkHz >= 100e6 ? " A CLK_HZ generic on your top entity lets the view use a slower clock (see the README)."
+                    : " Try a lower --clk-hz.");
+  $("kvLed").textContent = st.led.replace(/0/g, "·");
+  $("kvSw").textContent = sw.toString(2).padStart(16, "0").replace(/(.{4})/g, "$1 ").trim();
+}
+function fmtTime(us) {
+  if (us < 1000) return `${us} µs`;
+  if (us < 1e6) return `${(us / 1000).toFixed(1)} ms`;
+  return `${(us / 1e6).toFixed(2)} s`;
+}
+
+function applyPorts(list) {
+  ports = new Set(list.map((p) => p.toLowerCase()));
+  const has = (p) => ports.has(p);
+  BTN.forEach(([name], bit) => btns[bit].classList.toggle("unused", !has(`btn${name.toLowerCase()}`)));
+  sws.forEach((s) => s.g.classList.toggle("unused", !has("sw")));
+}
+
+const cons = $("console");
+function log(line) {
+  if (cons.querySelector(".empty")) cons.textContent = "";
+  const atEnd = cons.scrollTop + cons.clientHeight >= cons.scrollHeight - 4;
+  cons.append(line + "\n");
+  while (cons.childNodes.length > 400) cons.removeChild(cons.firstChild);
+  if (atEnd) cons.scrollTop = cons.scrollHeight;
+}
+
+function connect() {
+  const es = new EventSource("/events");
+  es.onmessage = (m) => {
+    const ev = JSON.parse(m.data);
+    if (ev.t === "hello") {
+      $("top").innerHTML = `design <b>${ev.top}</b>`;
+      $("fpgaTop").textContent = ev.top;
+      $("kvTop").textContent = ev.top;
+      $("kvPorts").textContent = ev.ports.join(", ");
+      const gens = Object.entries(ev.generics || {});
+      $("kvGen").textContent = gens.length ? gens.map(([k, v]) => `${k}=${v}`).join(", ") : "defaults";
+      clkHz = ev.clk_hz;
+      const mhz = ev.clk_hz / 1e6;
+      const clkTxt = !mhz ? "none" : mhz < 1 ? `${mhz * 1000} kHz` : `${mhz} MHz`;
+      $("clk").innerHTML = `clock <b>${clkTxt}</b>`;
+      $("clkLabel").textContent = clkTxt + (mhz && mhz !== 100 ? " (board: 100 MHz)" : !mhz ? " (no clk port)" : "");
+      applyPorts(ev.ports);
+    } else if (ev.t === "state") {
+      render(ev);
+    } else if (ev.t === "uart") {
+      log(ev.line);
+    } else if (ev.t === "status") {
+      $("run").classList.toggle("running", ev.running);
+      $("runtxt").textContent = ev.running ? "running" : `stopped${ev.code != null ? ` (exit ${ev.code})` : ""}`;
+    } else if (ev.t === "reset") {
+      cons.innerHTML = '<span class="empty">restarted</span>';
+    }
+  };
+  es.onerror = () => { $("run").classList.remove("running"); $("runtxt").textContent = "disconnected"; };
+}
+$("reset").onclick = () => post("/reset");
+$("quit").onclick = () => { post("/quit"); $("runtxt").textContent = "stopped"; document.body.style.opacity = .5; };
+drawInputs();
+connect();
+</script>
+</body>
+</html>
