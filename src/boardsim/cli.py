@@ -10,12 +10,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import __version__, ghdl, qemu, tools
+from . import __version__, ghdl, qemu, term, tools
 
 
 def cmd_setup(args):
     tools.conan_setup()
-    print("Conan is set up (default profile + arm-gnu-toolchain recipe).")
+    print(term.ok("Conan is set up") + " (default profile + arm-gnu-toolchain recipe).")
     return 0
 
 
@@ -25,13 +25,15 @@ def cmd_install(args):
 
 
 def cmd_doctor(args):
-    print(f"boardsim {__version__}, Python {sys.version.split()[0]} on {sys.platform}\n")
+    print(term.head(f"boardsim {__version__}") + f", Python {sys.version.split()[0]} on {sys.platform}\n")
     for name, finder, purpose, hints in tools.TOOLS:
         path = finder()
-        print(f"  {'ok ' if path else '-- '} {name:16s} {path or 'not found'}   ({purpose})")
+        mark = term.ok("ok ") if path else term.bad("-- ")
+        where = term.path(path) if path else term.warn("not found")
+        print(f"  {mark} {name:16s} {where}   {term.dim(f'({purpose})')}")
         if not path:
-            print(f"       install: {hints.get(sys.platform, hints['linux'])}")
-    print("\n  The ARM compiler, CMake and Ninja are downloaded by Conan on the first build.")
+            print(f"       install: {term.head(hints.get(sys.platform, hints['linux']))}")
+    print(term.dim("\n  The ARM compiler, CMake and Ninja are downloaded by Conan on the first build."))
     return 0
 
 
@@ -64,11 +66,11 @@ def cmd_zybo_build(args):
 def cmd_zybo_test(args):
     ok = True
     if ghdl.find_ghdl():
-        print("== Zybo PL: GHDL testbenches")
+        print(term.head("== Zybo PL: GHDL testbenches"))
         ok = ghdl.Design(tools.repo_dir(*ZYBO_PL)).test()
     else:
-        print("== Zybo PL: skipped (ghdl not installed; see boardsim doctor)")
-    print("== Zybo PS: build + every program in QEMU")
+        print(term.warn("== Zybo PL: skipped (ghdl not installed; see boardsim doctor)"))
+    print(term.head("== Zybo PS: build + every program in QEMU"))
     ok = tools.conan_build(tools.repo_dir(*ZYBO_PS), zybo_profile(args)) == 0 and ok
     return 0 if ok else 1
 
@@ -185,7 +187,7 @@ def cmd_basys3_program(args):
 def cmd_test(args):
     ok = cmd_zybo_test(args) == 0
     if ghdl.find_ghdl():
-        print("== Basys3: GHDL testbenches")
+        print(term.head("== Basys3: GHDL testbenches"))
         ok = ghdl.Design(tools.repo_dir("basys3")).test() and ok
     return 0 if ok else 1
 
@@ -272,6 +274,11 @@ def main(argv=None):
         return args.fn(args) or 0
     except KeyboardInterrupt:
         return 130
+    except SystemExit as e:
+        if isinstance(e.code, str):            # our own error messages
+            print(term.bad("error: ", 2) + e.code, file=sys.stderr)
+            return 1
+        raise
 
 
 if __name__ == "__main__":

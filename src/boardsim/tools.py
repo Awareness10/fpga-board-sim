@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import ghdl, qemu
+from . import ghdl, qemu, term
 
 ROOT = Path(__file__).resolve().parents[2]          # the repository checkout
 CONAN_PROFILES = ROOT / "conan" / "profiles"
@@ -39,7 +39,7 @@ def find_conan():
 
 
 def run(cmd, **kw):
-    print("+ " + " ".join(str(c) for c in cmd), flush=True)
+    print(term.dim("+ " + " ".join(str(c) for c in cmd)), flush=True)
     return subprocess.run([str(c) for c in cmd], **kw).returncode
 
 

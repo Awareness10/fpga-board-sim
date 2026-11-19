@@ -9,6 +9,8 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from . import term
+
 WEB = Path(__file__).resolve().parent / "web"
 
 
@@ -127,8 +129,8 @@ def serve(page, hub, hello, routes, port=8737, open_browser=True, on_stop=lambda
     if hasattr(signal, "SIGHUP"):
         signal.signal(signal.SIGHUP, interrupt)
 
-    print(f"Board view: {url}", flush=True)
-    print("Close with the Quit button on the page or Ctrl-C here.", flush=True)
+    print(term.head("Board view: ") + term.path(url), flush=True)
+    print(term.dim("Close with the Quit button on the page or Ctrl-C here."), flush=True)
     if open_browser:
         threading.Thread(target=webbrowser.open, args=(url,), daemon=True).start()
     try:

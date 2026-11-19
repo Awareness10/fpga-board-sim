@@ -13,6 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from . import term
+
 STD = "08"
 INSTALL_HINT = {
     "win32": "uv run boardsim install ghdl",
@@ -59,7 +61,7 @@ def install(force=False):
 
     exe = installed_dir() / "bin" / ("ghdl.exe" if sys.platform == "win32" else "ghdl")
     if exe.exists() and not force:
-        print(f"GHDL {RELEASE} is already installed: {exe}")
+        print(term.ok(f"GHDL {RELEASE} is already installed: ") + term.path(exe))
         return exe
     build = BUILDS.get((sys.platform, platform.machine().lower()))
     if not build:
@@ -72,7 +74,7 @@ def install(force=False):
 
     with tempfile.TemporaryDirectory(dir=data_dir()) as tmp:
         archive = Path(tmp) / name
-        print(f"Downloading {url}")
+        print(f"Downloading {term.path(url)}")
         h = hashlib.sha256()
         with urllib.request.urlopen(url) as r, open(archive, "wb") as f:
             total, done = int(r.headers.get("Content-Length", 0)), 0
@@ -103,7 +105,7 @@ def install(force=False):
 
     if not exe.exists():
         raise SystemExit(f"Unpacked {name}, but {exe} is missing.")
-    print(f"Installed GHDL {RELEASE}: {exe}")
+    print(term.ok(f"Installed GHDL {RELEASE}: ") + term.path(exe))
     return exe
 
 
@@ -183,11 +185,11 @@ class Design:
             log = self.build / f"{tb}.log"
             log.unlink(missing_ok=True)
             passed = self.elaborate(tb, log) and self.run(tb, log=log).returncode == 0
-            print(f"{'PASS' if passed else 'FAIL'}  {tb}", flush=True)
+            print(f"{term.ok('PASS') if passed else term.bad('FAIL')}  {tb}", flush=True)
             if not passed:
                 ok = False
                 lines = [l for l in log.read_text(errors="replace").splitlines()
                          if any(k in l.lower() for k in ("error", "fail", "assert"))]
                 for l in lines[:4]:
-                    print(f"        {l}")
+                    print(term.dim(f"        {l}"))
         return ok
