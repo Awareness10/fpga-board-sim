@@ -60,9 +60,10 @@ blinks at a visible rate (about 3 Hz) instead of flickering. The tests don't use
 and run as fast as your computer allows.
 
 **Keeping up.** At `shift=1` your computer has to emulate 500 million instructions per
-second. If it can't, the console shows `Warning: The guest is now late by N seconds` with
-N growing. One `late by 0.0 to 2.0 seconds` at startup is normal. Falling behind is
-harmless (QEMU then runs flat out), but the blink gets slower than on the board. On a
+second. If it can't, QEMU warns that the guest is "late", and the console shows
+`[qemu] QEMU is N s behind the real chip`. (QEMU always starts up to a couple of seconds
+behind and catches up; that warning is hidden.) Falling behind is harmless (QEMU then
+runs flat out), but the blink gets slower than on the board. On a
 laptop, try a performance power profile first, then `--shift 2` (4 ns per instruction,
 half speed).
 

@@ -11,6 +11,7 @@ explicit input commands (a-d/A-D = press/release BTN0-3, e-h/E-H = SW0-3 on/off)
 QEMU runs with -icount shift=N,align=on: 2^N ns per instruction, kept in step with the
 wall clock. N=1 is about the speed of the Zybo's 667 MHz Cortex-A9.
 """
+import re
 import threading
 import time
 
@@ -19,6 +20,8 @@ from . import qemu, server
 HEX_FIELDS = {"led", "btn", "sw", "dout1", "tri1", "tri2", "in2", "off", "val"}
 DEC_FIELDS = {"rd", "wr"}
 ALLOWED_INPUT = set("abcdABCDefghEFGH12345678")
+LATE = re.compile(r"late by [\d.]+ to ([\d.]+) seconds")
+LATE_OK_S = 2.0          # startup lag that is normal and caught up again
 
 
 class Board:
@@ -40,9 +43,19 @@ class Board:
         threading.Thread(target=self._reader, args=(q, gen), daemon=True).start()
 
     def _qemu_message(self, line):
-        # QEMU's own output, e.g. "The guest is now late by ..." (host too slow for -icount)
-        if line and "waiting for connection" not in line:
-            self.hub.publish({"t": "uart", "line": "[qemu] " + line})
+        # QEMU's own output. "The guest is now late by X to Y seconds" means this computer
+        # can't emulate the CPU at the -icount speed. Up to a couple of seconds happens at
+        # every startup and is caught up again: noise. More than that means it keeps falling
+        # behind, so timing (e.g. the blink) gets slower than on the board.
+        if not line or "waiting for connection" in line:
+            return
+        late = LATE.search(line)
+        if late:
+            if float(late.group(1)) <= LATE_OK_S:
+                return
+            line = (f"QEMU is {late.group(1)} s behind the real chip: this computer can't keep up, so the "
+                    f"program runs slower than on the board. Try --shift {self.shift + 1}.")
+        self.hub.publish({"t": "uart", "line": "[qemu] " + line})
 
     def stop(self):
         with self.lock:

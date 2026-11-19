@@ -61,8 +61,8 @@ are what runs.
 
 In the board view, hold keys `1`–`4` (or click) for BTN0–BTN3; **PS-SRST** restarts the
 program. QEMU runs at about the speed of the Zybo's 667 MHz Cortex-A9
-(`-icount shift=1`). If the console shows `The guest is now late by N seconds` with N
-growing, your computer can't keep up: use `--shift 2` (half speed).
+(`-icount shift=1`). If your computer can't keep up, the console says so (`QEMU is N s
+behind the real chip`); then use `--shift 2` (half speed).
 
 **Exercise (the tutorial's quiz):** make the switches drive the LEDs instead of the
 buttons. That takes a change on both sides: in Vivado, what GPIO2 of `axi_gpio_0` is
