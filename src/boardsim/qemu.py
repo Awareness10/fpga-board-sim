@@ -49,6 +49,15 @@ def find_qemu():
     return None
 
 
+def shell_line(cmd):
+    """The command as you'd type it in this OS's shell (paths with spaces quoted)."""
+    if sys.platform == "win32":
+        line = subprocess.list2cmdline([str(c) for c in cmd])
+        return "& " + line if line.startswith('"') else line      # PowerShell needs & before a quoted path
+    import shlex
+    return shlex.join(str(c) for c in cmd)
+
+
 def free_port():
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -96,7 +105,7 @@ class Qemu:
                     time.sleep(0.2)              # let _drain pick up QEMU's last words
                     out = b"".join(self.messages).decode(errors="replace").strip()
                     why = f"exited with code {code}" if code is not None else "never opened its UART socket (10 s)"
-                    raise SystemExit(f"QEMU did not start: it {why}.\n  command: {' '.join(cmd)}\n"
+                    raise SystemExit(f"QEMU did not start: it {why}.\n  command: {shell_line(cmd)}\n"
                                      f"  QEMU said: {out or '(nothing)'}")
                 time.sleep(0.05)
         self.sock.settimeout(None)

@@ -24,12 +24,23 @@ def cmd_install(args):
     return 0
 
 
+def tool_version(exe):
+    """First line of `exe --version`, or why there is none (e.g. blocked from starting)."""
+    try:
+        r = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=10)
+        return (r.stdout or r.stderr).strip().splitlines()[0] if (r.stdout or r.stderr).strip() else f"exit {r.returncode}"
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return f"won't start: {e}"
+
+
 def cmd_doctor(args):
     print(term.head(f"boardsim {__version__}") + f", Python {sys.version.split()[0]} on {sys.platform}\n")
     for name, finder, purpose, hints in tools.TOOLS:
         path = finder()
         mark = term.ok("ok ") if path else term.bad("-- ")
         where = term.path(path) if path else term.warn("not found")
+        if path and name.startswith("qemu"):
+            where += term.dim(f"  ({tool_version(path)})")
         print(f"  {mark} {name:16s} {where}   {term.dim(f'({purpose})')}")
         if not path:
             print(f"       install: {term.head(hints.get(sys.platform, hints['linux']))}")

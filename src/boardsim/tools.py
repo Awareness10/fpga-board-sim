@@ -89,7 +89,7 @@ def find_conan():
 
 
 def run(cmd, **kw):
-    print(term.dim("+ " + " ".join(str(c) for c in cmd)), flush=True)
+    print(term.dim("+ " + qemu.shell_line(cmd)), flush=True)
     return subprocess.run([str(c) for c in cmd], **kw).returncode
 
 
