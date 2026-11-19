@@ -3,10 +3,12 @@
     uv run boardsim doctor              which tools are installed, and how to get the rest
     uv run boardsim test                every testbench and every program
     uv run boardsim zybo --help         Zybo Z7: ARM programs in QEMU, PL in GHDL
+    uv run boardsim basys3 --help       Basys3: VHDL in GHDL, Vivado bitstreams
 """
 import argparse
 import subprocess
 import sys
+from pathlib import Path
 
 from . import __version__, ghdl, qemu, tools
 
@@ -76,8 +78,8 @@ def cmd_zybo_run(args):
     return zybo_view.run(elf, shift=args.shift, port=args.port, open_browser=not args.no_browser)
 
 
-def open_wave(design, tb):
-    d = ghdl.Design(design)
+def open_wave(design, tb, extra_sim=()):
+    d = ghdl.Design(design, extra_sim=extra_sim)
     d.analyse()
     if not d.elaborate(tb):
         return 1
@@ -97,8 +99,47 @@ def cmd_zybo_wave(args):
     return open_wave(tools.repo_dir(*ZYBO_PL), args.testbench)
 
 
+# --- Basys3 ---------------------------------------------------------------------
+def basys3_dir(args):
+    """--dir (your own project with src/, tb/, constraints/) or the repo's basys3/."""
+    return Path(args.dir).resolve() if getattr(args, "dir", None) else tools.repo_dir("basys3")
+
+
+def basys3_design(args):
+    shared_sim = [tools.repo_dir("basys3", "sim")] if getattr(args, "dir", None) else []
+    return ghdl.Design(basys3_dir(args), extra_sim=shared_sim)
+
+
+def cmd_basys3_test(args):
+    return 0 if basys3_design(args).test(args.only) else 1
+
+
+def cmd_basys3_wave(args):
+    shared_sim = [tools.repo_dir("basys3", "sim")] if args.dir else []
+    return open_wave(basys3_dir(args), args.testbench, shared_sim)
+
+
+def vivado_basys3(args, program):
+    vivado = tools.require(tools.find_vivado(), "Vivado")
+    cmd = [vivado, "-mode", "batch", "-nojournal", "-nolog", "-source", tools.repo_dir("basys3", "vivado", "build.tcl"),
+           "-tclargs", basys3_dir(args), args.top] + (["program"] if program else [])
+    return tools.run(cmd, cwd=basys3_dir(args))
+
+
+def cmd_basys3_bit(args):
+    return vivado_basys3(args, program=False)
+
+
+def cmd_basys3_program(args):
+    return vivado_basys3(args, program=True)
+
+
 def cmd_test(args):
-    return cmd_zybo_test(args)
+    ok = cmd_zybo_test(args) == 0
+    if ghdl.find_ghdl():
+        print("== Basys3: GHDL testbenches")
+        ok = ghdl.Design(tools.repo_dir("basys3")).test() and ok
+    return 0 if ok else 1
 
 
 def main(argv=None):
@@ -133,6 +174,23 @@ def main(argv=None):
     p = zybo.add_parser("wave", help="simulate a PL testbench and open the waveform")
     p.add_argument("testbench", nargs="?", default="zybo_gpio_tb")
     p.set_defaults(fn=cmd_zybo_wave)
+
+    basys3 = sub.add_parser("basys3", help="Basys3 (Artix-7): VHDL in GHDL, Vivado build").add_subparsers(dest="bcmd", required=True)
+    dir_help = "your own design folder with src/, tb/, constraints/ (default: the repo's basys3/)"
+    p = basys3.add_parser("test", help="run every testbench in tb/")
+    p.add_argument("--dir", help=dir_help)
+    p.add_argument("--only", help="only testbenches whose name starts with this")
+    p.set_defaults(fn=cmd_basys3_test)
+    p = basys3.add_parser("wave", help="simulate a testbench and open the waveform")
+    p.add_argument("testbench", nargs="?", default="basys3_top_tb")
+    p.add_argument("--dir", help=dir_help)
+    p.set_defaults(fn=cmd_basys3_wave)
+    for name, fn, text in (("bit", cmd_basys3_bit, "Vivado: build the bitstream"),
+                           ("program", cmd_basys3_program, "Vivado: build and load it onto a connected Basys3")):
+        p = basys3.add_parser(name, help=text)
+        p.add_argument("--top", default="basys3_top", help="top entity; constraints/<top>.xdc must exist")
+        p.add_argument("--dir", help=dir_help)
+        p.set_defaults(fn=fn)
 
     args = ap.parse_args(argv)
     try:

@@ -69,4 +69,43 @@ TOOLS = [
         "darwin": "brew install --cask gtkwave   (or Surfer: https://surfer-project.org)",
         "linux": "sudo apt install gtkwave   /   sudo pacman -S gtkwave",
     }),
+    ("vivado", lambda: find_vivado(), "bitstreams, programming real boards (optional)", {
+        "win32": "AMD Vivado 2023.2 (https://www.amd.com/en/products/software/adaptive-socs-and-fpgas/vivado.html)",
+        "darwin": "not available for macOS: use a Windows/Linux machine for bitstreams",
+        "linux": "AMD Vivado 2023.2 (https://www.amd.com/en/products/software/adaptive-socs-and-fpgas/vivado.html)",
+    }),
 ]
+
+
+# --- AMD/Xilinx tools (Windows and Linux only; there is no Vivado for macOS) -------
+XILINX_ROOTS = {
+    "win32": [Path("C:/Xilinx"), Path("C:/AMD"), Path("D:/Xilinx")],
+    "linux": [Path.home() / "Xilinx", Path("/tools/Xilinx"), Path("/opt/Xilinx")],
+}.get(sys.platform, [])
+
+
+def find_xilinx(product, exe, env=None):
+    """<root>/<product>/<version>/bin/<exe>, newest version first; $env or PATH win."""
+    exe_name = exe + (".bat" if sys.platform == "win32" else "")
+    if env and os.environ.get(env):
+        p = Path(os.environ[env])
+        p = p / "bin" / exe_name if p.is_dir() else p
+        return str(p) if p.exists() else None
+    found = shutil.which(exe_name) or shutil.which(exe)
+    if found:
+        return found
+    hits = sorted((v for root in XILINX_ROOTS for v in root.glob(f"{product}/*/bin/{exe_name}")), reverse=True)
+    return str(hits[0]) if hits else None
+
+
+def find_vivado():
+    return find_xilinx("Vivado", "vivado", "XILINX_VIVADO")
+
+
+def require(path, what):
+    if not path:
+        where = {"darwin": "Vivado/Vitis don't run on macOS: use a Windows or Linux machine (or VM) for this step.",
+                 "win32": "Install Vivado/Vitis 2023.2 (default C:\\Xilinx), or set XILINX_VIVADO / XILINX_VITIS.",
+                 }.get(sys.platform, "Install Vivado/Vitis 2023.2 (default ~/Xilinx), or set XILINX_VIVADO / XILINX_VITIS.")
+        raise SystemExit(f"{what} not found. {where}")
+    return path
