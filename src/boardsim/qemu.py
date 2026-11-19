@@ -58,7 +58,7 @@ def free_port():
 class Qemu:
     """One QEMU process with UART1 on a socket. read() / send() / wait()."""
 
-    def __init__(self, elf, icount_shift=None, extra=()):
+    def __init__(self, elf, icount_shift=None, extra=(), on_message=None):
         qemu = find_qemu()
         if not qemu:
             hint = INSTALL_HINT.get(sys.platform, INSTALL_HINT["linux"])
@@ -73,6 +73,7 @@ class Qemu:
         self.proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT, creationflags=flags)
         self.messages = []                       # QEMU's own stdout/stderr (warnings)
+        self.on_message = on_message
         threading.Thread(target=self._drain, daemon=True).start()
         self.sock = None
         deadline = time.time() + 10
@@ -89,6 +90,8 @@ class Qemu:
     def _drain(self):
         for line in self.proc.stdout:
             self.messages.append(line)
+            if self.on_message:
+                self.on_message(line.decode(errors="replace").rstrip())
 
     def read(self, n=4096):
         """Bytes from the UART, b'' once the program has ended."""

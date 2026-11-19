@@ -69,8 +69,11 @@ def cmd_zybo_test(args):
 
 def cmd_zybo_run(args):
     elf = ensure_built(args, args.program)
-    print("Keys + Enter go to the board: 1-4 toggle BTN0-3, 5-8 toggle SW0-3, q quits.")
-    return qemu.interactive(str(elf))
+    if args.terminal:
+        print("Keys + Enter go to the board: 1-4 toggle BTN0-3, 5-8 toggle SW0-3, q quits.")
+        return qemu.interactive(str(elf))
+    from . import zybo_view
+    return zybo_view.run(elf, shift=args.shift, port=args.port, open_browser=not args.no_browser)
 
 
 def open_wave(design, tb):
@@ -118,8 +121,13 @@ def main(argv=None):
     p = zybo.add_parser("test", help="PL testbenches + every ARM program in QEMU")
     p.add_argument("--system-toolchain", action="store_true")
     p.set_defaults(fn=cmd_zybo_test)
-    p = zybo.add_parser("run", help="run a program on the emulated board")
+    p = zybo.add_parser("run", help="run a program on the emulated board (browser board view)")
     p.add_argument("program", nargs="?", default="xgpio_btns", help="e.g. xgpio_blink, xgpio_btns, hello")
+    p.add_argument("--terminal", action="store_true", help="text board in this terminal instead of the browser")
+    p.add_argument("--shift", type=int, default=1, choices=range(0, 11), metavar="N",
+                   help="2^N ns per emulated instruction (default 1 = Zybo speed; 2 = half, for slow machines)")
+    p.add_argument("--port", type=int, default=8737)
+    p.add_argument("--no-browser", action="store_true", help="don't open a browser")
     p.add_argument("--system-toolchain", action="store_true")
     p.set_defaults(fn=cmd_zybo_run)
     p = zybo.add_parser("wave", help="simulate a PL testbench and open the waveform")

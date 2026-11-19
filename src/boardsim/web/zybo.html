@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zybo Z7 Board View</title>
+<style>
+:root {
+  --bg: #0d1014;
+  --panel: #151a21;
+  --panel-2: #1b212a;
+  --line: #262e39;
+  --text: #e6ebf2;
+  --muted: #8a96a8;
+  --faint: #566275;
+  --pcb: #12161b;
+  --pcb-edge: #2a313b;
+  --silk: #c9d1dc;
+  --copper: #343c47;
+  --lit: #4ade80;
+  --led-on: #5dff8f;
+  --led-off: #1b2a20;
+  --axi: #60a5fa;
+  --ps: #3b82f6;
+  --pl: #f59e0b;
+  --red: #ef4444;
+  --amber: #fbbf24;
+  --mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { display: flex; align-items: center; gap: 16px; padding: 14px 20px;
+  border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: .2px; }
+.chip { font: 12px var(--mono); padding: 3px 9px; border-radius: 999px;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
+.chip b { color: var(--text); font-weight: 600; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--faint); margin-right: 6px; vertical-align: 1px; }
+.running .status-dot { background: var(--lit); box-shadow: 0 0 8px var(--lit); }
+.spacer { flex: 1; }
+button.act { font: inherit; font-size: 13px; color: var(--text); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+button.act:hover { border-color: var(--faint); }
+button.act.danger { color: #fca5a5; }
+
+main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; padding: 16px 20px 24px; }
+@media (max-width: 1150px) { main { grid-template-columns: 1fr; } }
+.board-wrap { background: radial-gradient(1200px 600px at 40% 30%, #161c24, var(--bg));
+  border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
+svg#board { width: 100%; height: auto; display: block; user-select: none; -webkit-user-select: none; }
+.hint { color: var(--muted); font-size: 12.5px; padding: 6px 8px 2px; }
+kbd { font: 11.5px var(--mono); background: var(--panel-2); border: 1px solid var(--line);
+  border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; color: var(--text); }
+
+aside { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  margin: 0 0 10px; font-weight: 600; display: flex; justify-content: space-between; }
+.card h2 span { text-transform: none; letter-spacing: 0; font-weight: 400; font-family: var(--mono); }
+
+.regs { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+.regs td { padding: 5px 4px; border-top: 1px solid var(--line); vertical-align: middle; }
+.regs tr:first-child td { border-top: 0; }
+.regs .off { color: var(--faint); width: 44px; }
+.regs .name { color: var(--text); }
+.regs .val { text-align: right; color: var(--muted); width: 36px; }
+.bits { display: inline-flex; gap: 3px; }
+.bit { width: 20px; height: 20px; border-radius: 4px; display: inline-grid; place-items: center;
+  font-size: 11px; background: var(--panel-2); color: var(--faint); border: 1px solid var(--line);
+  transition: background .12s, color .12s; }
+.bit.one { background: #1f3a2a; color: var(--lit); border-color: #2c5a3e; }
+.regs tr.hit td { background: rgba(96,165,250,.10); }
+.regs tr.hit .off { color: var(--axi); }
+.note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.stat .k { color: var(--muted); font-size: 11.5px; }
+.stat .v { font: 600 18px var(--mono); font-variant-numeric: tabular-nums; }
+.last { font: 12.5px var(--mono); margin-top: 8px; color: var(--muted); }
+.last b { color: var(--axi); font-weight: 600; }
+canvas#spark { width: 100%; height: 56px; display: block; margin-top: 8px; }
+
+.console { background: #0a0d10; border: 1px solid var(--line); border-radius: 8px; height: 170px;
+  overflow: auto; padding: 8px 10px; font: 12.5px/1.5 var(--mono); color: #cfe3d6; white-space: pre-wrap; }
+.console .empty { color: var(--faint); }
+.legend { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12.5px; color: var(--muted); }
+
+/* --- SVG board --- */
+.silk { fill: var(--silk); font-family: system-ui, sans-serif; }
+.silk-m { fill: var(--silk); font-family: var(--mono); }
+.dimtext { fill: #5d6879; font-size: 10px; font-family: system-ui, sans-serif; }
+.trace { fill: none; stroke: var(--copper); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+  transition: stroke .1s; }
+.trace.on { stroke: var(--lit); filter: url(#traceGlow); }
+.led-body { fill: var(--led-off); stroke: #33463a; stroke-width: 1; transition: fill .06s; }
+.led.on .led-body { fill: var(--led-on); stroke: #b6ffcd; }
+.led-halo { fill: url(#ledHalo); opacity: 0; transition: opacity .06s; pointer-events: none; }
+.led.on .led-halo { opacity: 1; }
+.btn { cursor: pointer; }
+.btn .cap { fill: #20252c; stroke: #3b434e; stroke-width: 1.5; transition: transform .05s; }
+.btn .cap-top { fill: url(#capGrad); pointer-events: none; transition: transform .05s; }
+.btn.pressed .cap, .btn.pressed .cap-top { transform: translateY(1.5px) scale(.94); }
+.btn.pressed .cap { fill: #15191e; }
+.btn.pressed .base { stroke: var(--lit); stroke-width: 2; }
+.btn:focus-visible .base, .sw:focus-visible .base { stroke: var(--axi); stroke-width: 2; }
+.btn .base, .sw .base { outline: none; }
+.btn, .sw, .rst { outline: none; }
+.sw { cursor: pointer; }
+.sw .knob { fill: #e5e7eb; stroke: #9ca3af; transition: transform .12s ease; }
+.unwired { opacity: .38; }
+.unwired .trace { display: none; }
+.pin-dot { fill: #59616d; }
+.pin-dot.on { fill: var(--lit); }
+.axi-line { stroke: var(--axi); stroke-width: 4; fill: none; stroke-dasharray: 8 7; opacity: .35; }
+.axi-line.active { opacity: 1; animation: flow var(--flow, 1s) linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -30; } }
+.txled { fill: #3a2f12; transition: fill .05s; }
+.txled.on { fill: var(--amber); filter: url(#traceGlow); }
+.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+.rst { cursor: pointer; }
+.rst:hover .rcap { fill: #f87171; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Zybo Z7 · board view</h1>
+  <span class="chip" id="prog">program <b>…</b></span>
+  <span class="chip" id="cfg">GPIO2 <b>…</b></span>
+  <span class="chip" id="run"><span class="status-dot"></span><span id="runtxt">connecting…</span></span>
+  <span class="chip" id="speed" title="QEMU -icount shift=1,align=on: 2 ns per instruction, kept in step with the wall clock">speed <b>≈ Zybo</b></span>
+  <span class="spacer"></span>
+  <button class="act" id="reset" title="Restart the program (like the board's PS-SRST button)">↻ PS-SRST</button>
+  <button class="act danger" id="quit" title="Stop QEMU and this server">Quit</button>
+</header>
+
+<main>
+  <section>
+    <div class="board-wrap">
+      <svg id="board" viewBox="0 0 1100 700" role="img" aria-label="Zybo Z7 board model">
+        <defs>
+          <radialGradient id="ledHalo">
+            <stop offset="0" stop-color="#7dffa6" stop-opacity=".9"/>
+            <stop offset=".35" stop-color="#4ade80" stop-opacity=".35"/>
+            <stop offset="1" stop-color="#4ade80" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="capGrad" cx=".4" cy=".35" r=".7">
+            <stop offset="0" stop-color="#4b5563"/>
+            <stop offset="1" stop-color="#111418"/>
+          </radialGradient>
+          <linearGradient id="chipGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#2c313a"/>
+            <stop offset="1" stop-color="#1a1d23"/>
+          </linearGradient>
+          <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#9aa3ad"/>
+            <stop offset="1" stop-color="#5b636d"/>
+          </linearGradient>
+          <pattern id="pcbGrid" width="22" height="22" patternUnits="userSpaceOnUse">
+            <path d="M22 0H0V22" fill="none" stroke="#1a2027" stroke-width="1"/>
+          </pattern>
+          <filter id="traceGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.2" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- PCB -->
+        <rect x="20" y="20" width="1060" height="660" rx="26" fill="var(--pcb)" stroke="var(--pcb-edge)" stroke-width="2"/>
+        <rect x="20" y="20" width="1060" height="660" rx="26" fill="url(#pcbGrid)" opacity=".55"/>
+        <g fill="none" stroke="#b08d57" stroke-width="3">
+          <circle cx="52" cy="52" r="10"/><circle cx="1048" cy="52" r="10"/>
+          <circle cx="52" cy="648" r="10"/><circle cx="1048" cy="648" r="10"/>
+        </g>
+
+        <!-- Not modelled: top-edge connectors, Pmods, audio (dimmed, for orientation) -->
+        <g opacity=".5">
+          <rect x="120" y="22" width="78" height="34" rx="4" fill="url(#metal)"/>
+          <text x="159" y="72" text-anchor="middle" class="dimtext">HDMI RX</text>
+          <rect x="226" y="22" width="78" height="34" rx="4" fill="url(#metal)"/>
+          <text x="265" y="72" text-anchor="middle" class="dimtext">HDMI TX</text>
+          <rect x="336" y="22" width="70" height="52" rx="4" fill="url(#metal)"/>
+          <text x="371" y="90" text-anchor="middle" class="dimtext">Ethernet</text>
+          <rect x="436" y="22" width="46" height="38" rx="4" fill="url(#metal)"/>
+          <text x="459" y="76" text-anchor="middle" class="dimtext">USB host</text>
+          <g fill="#2a2f36" stroke="#5b636d" stroke-width="3">
+            <circle cx="560" cy="44" r="13"/><circle cx="604" cy="44" r="13"/><circle cx="648" cy="44" r="13"/>
+          </g>
+          <text x="604" y="76" text-anchor="middle" class="dimtext">audio</text>
+          <g id="pmods"></g>
+          <text x="1040" y="420" text-anchor="middle" class="dimtext">Pmod JA–JE</text>
+        </g>
+        <text x="760" y="40" class="dimtext">dimmed parts are not modelled</text>
+
+        <!-- Power -->
+        <rect x="20" y="96" width="38" height="34" rx="4" fill="#23272e" stroke="#4b5563"/>
+        <text x="72" y="118" class="dimtext">5V</text>
+        <rect x="24" y="150" width="30" height="20" rx="3" fill="#2b3038" stroke="#4b5563"/>
+        <rect x="27" y="153" width="13" height="14" rx="2" fill="#d1d5db"/>
+        <text x="62" y="165" class="dimtext">PWR on</text>
+        <circle cx="76" cy="196" r="5" fill="var(--red)" filter="url(#traceGlow)"/>
+        <text x="88" y="200" class="dimtext">PGOOD</text>
+
+        <!-- DDR3 + its bus to the PS -->
+        <g id="ddrbus" stroke="var(--copper)" stroke-width="2"></g>
+        <rect x="170" y="215" width="118" height="86" rx="6" fill="url(#chipGrad)" stroke="#3a414c"/>
+        <text x="229" y="252" text-anchor="middle" class="silk" font-size="13" font-weight="600">DDR3</text>
+        <text x="229" y="270" text-anchor="middle" class="silk-m" font-size="11" opacity=".7">1 GB</text>
+
+        <!-- USB-UART: the program's console -->
+        <path d="M350 420 H210 V400 H62" class="trace" id="uartTrace"/>
+        <rect x="20" y="386" width="42" height="28" rx="5" fill="url(#metal)"/>
+        <rect x="26" y="394" width="30" height="12" rx="3" fill="#1f2328"/>
+        <circle cx="86" cy="378" r="4.5" class="txled" id="txled"/>
+        <text x="96" y="382" class="dimtext">TX</text>
+        <text x="22" y="436" class="silk" font-size="12" font-weight="600">UART · J12</text>
+        <text x="22" y="452" class="dimtext">USB-UART → console (right)</text>
+        <text x="215" y="442" class="dimtext">UART1 · MIO 48/49</text>
+
+        <!-- Zynq package with an x-ray view of PS and PL -->
+        <rect x="330" y="190" width="410" height="290" rx="12" fill="url(#chipGrad)" stroke="#444c58" stroke-width="2"/>
+        <text x="345" y="212" class="silk" font-size="13" font-weight="700" letter-spacing="1">ZYNQ-7000 · XC7Z020</text>
+        <text x="726" y="212" text-anchor="end" class="dimtext">x-ray view</text>
+
+        <rect x="350" y="232" width="150" height="226" rx="10" fill="rgba(59,130,246,.10)" stroke="var(--ps)" stroke-width="1.5"/>
+        <text x="364" y="256" class="silk" font-size="13" font-weight="700" fill="#93c5fd">PS</text>
+        <text x="390" y="256" class="dimtext" fill="#93c5fd">processing system</text>
+        <g id="cpus"></g>
+        <text x="364" y="356" class="dimtext">running</text>
+        <text x="364" y="373" class="silk-m" font-size="11.5" id="psprog">…</text>
+        <circle cx="488" cy="246" r="4" fill="var(--lit)" class="pulse" id="psdot"/>
+
+        <rect x="530" y="232" width="196" height="226" rx="10" fill="rgba(245,158,11,.08)" stroke="var(--pl)" stroke-width="1.5"/>
+        <text x="544" y="256" class="silk" font-size="13" font-weight="700" fill="#fcd34d">PL</text>
+        <text x="568" y="256" class="dimtext" fill="#fcd34d">FPGA fabric</text>
+
+        <!-- axi_gpio_0 -->
+        <rect x="590" y="280" width="110" height="130" rx="8" fill="#241d12" stroke="var(--pl)" stroke-width="1.5"/>
+        <text x="645" y="300" text-anchor="middle" class="silk-m" font-size="12" font-weight="700">axi_gpio_0</text>
+        <text x="645" y="316" text-anchor="middle" class="dimtext">0x4120_0000</text>
+        <text x="694" y="345" text-anchor="end" class="silk-m" font-size="10.5">CH1 ▸</text>
+        <text x="694" y="358" text-anchor="end" class="dimtext">out</text>
+        <text x="623" y="398" text-anchor="middle" class="silk-m" font-size="10.5">CH2 ▾ in</text>
+
+        <!-- AXI between PS and the GPIO -->
+        <path d="M500 345 H590" class="axi-line" id="axi"/>
+        <text x="545" y="333" text-anchor="middle" class="silk-m" font-size="10" fill="#93c5fd">AXI</text>
+        <text x="545" y="368" text-anchor="middle" class="dimtext">GP0</text>
+        <text x="545" y="440" text-anchor="middle" class="silk-m" font-size="11" fill="#93c5fd" id="axiop"></text>
+
+        <!-- DONE: the PL is configured (our "bitstream" is loaded) -->
+        <circle cx="764" cy="206" r="5" fill="var(--lit)" filter="url(#traceGlow)"/>
+        <text x="775" y="210" class="dimtext">DONE (PL configured)</text>
+
+        <!-- Generated: traces, LEDs, switches, buttons -->
+        <g id="ch1"></g>
+        <g id="swGroup"></g>
+        <g id="btnGroup"></g>
+        <text x="560" y="672" class="dimtext" id="swNote"></text>
+        <text x="870" y="672" text-anchor="middle" class="dimtext" id="btnNote"></text>
+
+        <!-- PS-SRST: restart the program -->
+        <g class="rst" id="rst" role="button" tabindex="0" aria-label="PS-SRST: restart the program">
+          <rect x="96" y="590" width="40" height="40" rx="6" fill="#23272e" stroke="#4b5563"/>
+          <circle cx="116" cy="610" r="13" fill="#b91c1c" class="rcap"/>
+          <text x="116" y="652" text-anchor="middle" class="silk" font-size="12" font-weight="600">PS-SRST</text>
+          <text x="116" y="667" text-anchor="middle" class="dimtext">restart program</text>
+        </g>
+
+        <text x="190" y="610" class="silk" font-size="18" font-weight="700" letter-spacing="1.5">ZYBO Z7</text>
+        <text x="190" y="628" class="dimtext">board model · QEMU + zybo_board.c</text>
+      </svg>
+    </div>
+    <div class="hint">
+      Hold <kbd>1</kbd>–<kbd>4</kbd> (or click and hold) for BTN0–BTN3 · <kbd>5</kbd>–<kbd>8</kbd> or click to flip SW0–SW3.
+      Lit traces show which pins are high; the blue AXI link moves when the program talks to the GPIO.
+    </div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h2>AXI GPIO registers <span>axi_gpio_0</span></h2>
+      <table class="regs" id="regs">
+        <tr data-off="0"><td class="off">0x00</td><td class="name">GPIO_DATA</td><td><span class="bits" id="r0"></span></td><td class="val" id="v0"></td></tr>
+        <tr data-off="4"><td class="off">0x04</td><td class="name">GPIO_TRI</td><td><span class="bits" id="r4"></span></td><td class="val" id="v4"></td></tr>
+        <tr data-off="8"><td class="off">0x08</td><td class="name">GPIO2_DATA</td><td><span class="bits" id="r8"></span></td><td class="val" id="v8"></td></tr>
+        <tr data-off="12"><td class="off">0x0C</td><td class="name">GPIO2_TRI</td><td><span class="bits" id="r12"></span></td><td class="val" id="v12"></td></tr>
+      </table>
+      <div class="note">Bits 3…0. TRI: 1 = input, 0 = output. DATA shows what a read returns
+        (channel 1: the value written; channel 2: the pins). The row the program touched last is highlighted.</div>
+    </div>
+
+    <div class="card">
+      <h2>Bus activity <span>M_AXI_GP0</span></h2>
+      <div class="stats">
+        <div class="stat"><div class="k">reads / s</div><div class="v" id="rps">0</div></div>
+        <div class="stat"><div class="k">writes / s</div><div class="v" id="wps">0</div></div>
+      </div>
+      <canvas id="spark"></canvas>
+      <div class="last" id="last">last access: –</div>
+    </div>
+
+    <div class="card">
+      <h2>UART console <span>J12 · 115200</span></h2>
+      <div class="console" id="console"><span class="empty">The program's xil_printf output appears here.</span></div>
+    </div>
+
+    <div class="card">
+      <h2>How to read this</h2>
+      <div class="legend">
+        <span style="color:#93c5fd">PS</span><span>the ARM cores running your C program</span>
+        <span style="color:#fcd34d">PL</span><span>the FPGA fabric with axi_gpio_0, your "bitstream"</span>
+        <span style="color:var(--axi)">AXI</span><span>every XGpio_* call is a read or write on this bus</span>
+        <span style="color:var(--lit)">traces</span><span>green = that pin is high right now</span>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+const NS = "http://www.w3.org/2000/svg";
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function txt(tag, attrs, text, parent) { const e = el(tag, attrs, parent); e.textContent = text; return e; }
+
+// ---- Geometry (bit k = LD k / BTN k / SW k; bit 0 drawn rightmost, like the [zybo] text) ----
+const LED_X = (k) => 940 - 60 * k;
+const BTN_X = (k) => 960 - 60 * k;
+const SW_X  = (k) => 650 - 60 * k;
+const CH1_Y = (k) => 300 + 10 * k + 25;      // CH1 pins on the block's right edge
+const CH2_X = (k) => 645 - 15 * k + 8;       // CH2 pins on the block's bottom edge
+const PIN_Y2 = 410;
+
+// ---- Static decoration generated in code ----
+(function decorate() {
+  const pm = $("pmods");
+  for (let j = 0; j < 5; j++) {
+    const y = 100 + j * 60;
+    el("rect", { x: 1026, y, width: 40, height: 46, rx: 3, fill: "#20252c", stroke: "#4b5563" }, pm);
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 2; c++)
+      el("circle", { cx: 1038 + c * 16, cy: y + 7 + r * 6.4, r: 2, fill: "#b08d57" }, pm);
+  }
+  const ddr = $("ddrbus");
+  for (let i = 0; i < 5; i++) el("line", { x1: 288, y1: 232 + i * 13, x2: 350, y2: 268 + i * 12 }, ddr);
+  const cpus = $("cpus");
+  for (let i = 0; i < 2; i++) {
+    const x = 364 + i * 66;
+    el("rect", { x, y: 272, width: 56, height: 56, rx: 6, fill: "#14233d", stroke: "#3b82f6" }, cpus);
+    txt("text", { x: x + 28, y: 297, "text-anchor": "middle", class: "silk-m", "font-size": 10.5 }, "A9", cpus);
+    txt("text", { x: x + 28, y: 313, "text-anchor": "middle", class: "dimtext" }, "core " + i, cpus);
+  }
+})();
+
+// ---- LEDs on CH1 ----
+const leds = [], ch1Traces = [], ch1Pins = [];
+(function buildLeds() {
+  const g = $("ch1");
+  for (let k = 0; k < 4; k++) {
+    const x = LED_X(k), y = CH1_Y(k);
+    ch1Traces[k] = el("path", { d: `M700 ${y} H${x} V508`, class: "trace" }, g);
+    ch1Pins[k] = el("circle", { cx: 700, cy: y, r: 2.6, class: "pin-dot" }, g);
+  }
+  for (let k = 0; k < 4; k++) {
+    const x = LED_X(k);
+    const led = el("g", { class: "led" }, g);
+    el("circle", { cx: x, cy: 519, r: 30, class: "led-halo" }, led);
+    el("rect", { x: x - 11, y: 509, width: 22, height: 14, rx: 3, class: "led-body" }, led);
+    txt("text", { x, y: 545, "text-anchor": "middle", class: "silk", "font-size": 12, "font-weight": 600 }, "LD" + k, led);
+    leds[k] = led;
+  }
+  txt("text", { x: 962, y: 514, class: "dimtext" }, "user LEDs", g);
+  txt("text", { x: 962, y: 527, class: "dimtext" }, "← CH1", g);
+})();
+
+// ---- Switches and buttons (one group is wired to CH2, the other is not) ----
+const sws = [], btns = [], swTraces = [], btnTraces = [];
+(function buildInputs() {
+  const sg = $("swGroup"), bg = $("btnGroup");
+  for (let k = 0; k < 4; k++) {
+    const px = CH2_X(k);
+    swTraces[k] = el("path", { d: `M${px} ${PIN_Y2} V${520 - 10 * k} H${SW_X(k)} V588`, class: "trace" }, sg);
+    btnTraces[k] = el("path", { d: `M${px} ${PIN_Y2} V${566 + 7 * k} H${BTN_X(k)} V598`, class: "trace" }, bg);
+  }
+  for (let k = 0; k < 4; k++) {
+    const x = SW_X(k);
+    const s = el("g", { class: "sw", role: "button", tabindex: 0, "aria-label": "switch SW" + k }, sg);
+    el("rect", { x: x - 14, y: 588, width: 28, height: 52, rx: 4, fill: "#1f6feb", stroke: "#3b82f6", class: "base" }, s);
+    el("rect", { x: x - 7, y: 594, width: 14, height: 40, rx: 3, fill: "#0b1730" }, s);
+    const knob = el("rect", { x: x - 6, y: 616, width: 12, height: 16, rx: 2, class: "knob" }, s);
+    txt("text", { x, y: 655, "text-anchor": "middle", class: "silk", "font-size": 12, "font-weight": 600 }, "SW" + k, s);
+    s.knob = knob; s.k = k;
+    sws[k] = s;
+  }
+  for (let k = 0; k < 4; k++) {
+    const x = BTN_X(k);
+    const b = el("g", { class: "btn", role: "button", tabindex: 0, "aria-label": "push-button BTN" + k }, bg);
+    el("rect", { x: x - 18, y: 598, width: 36, height: 36, rx: 5, fill: "#2b3038", stroke: "#4b5563", class: "base" }, b);
+    el("circle", { cx: x, cy: 616, r: 13, class: "cap", style: `transform-origin:${x}px 616px` }, b);
+    el("circle", { cx: x, cy: 616, r: 10, class: "cap-top", style: `transform-origin:${x}px 616px` }, b);
+    txt("text", { x, y: 652, "text-anchor": "middle", class: "silk", "font-size": 12, "font-weight": 600 }, "BTN" + k, b);
+    b.k = k;
+    btns[k] = b;
+  }
+})();
+
+// ---- Register bit cells ----
+for (const off of [0, 4, 8, 12]) {
+  const box = $("r" + off);
+  for (let i = 3; i >= 0; i--) { const c = document.createElement("span"); c.className = "bit"; c.textContent = "0"; box.appendChild(c); }
+}
+function setBits(off, v) {
+  const cells = $("r" + off).children;
+  for (let i = 0; i < 4; i++) {
+    const bit = (v >> (3 - i)) & 1;
+    cells[i].textContent = bit;
+    cells[i].classList.toggle("one", !!bit);
+  }
+  $("v" + off).textContent = "0x" + v.toString(16).toUpperCase();
+}
+
+// ---- Server connection ----
+const post = (path, body = "") => fetch(path, { method: "POST", body }).catch(() => {});
+const send = (k) => post("/input", k);
+
+let st = null;                 // last @zybo state
+let cfg = null;
+const wantSw = [0, 0, 0, 0];   // switch positions the user set (shown immediately)
+const held = new Set();        // buttons held with mouse / keyboard
+let prev = null;               // for rates
+let rps = 0, wps = 0;
+const history = [];
+
+function applyCfg(c) {
+  if (c === cfg) return;
+  cfg = c;
+  // The model's GPIO2 board interface: btns_4bits (the switches are not wired to the GPIO).
+  $("swGroup").classList.add("unwired");
+  $("btnGroup").classList.remove("unwired");
+  $("cfg").innerHTML = `GPIO2 <b>${c}_4bits</b>`;
+  $("swNote").textContent = "SW0–3: not wired to axi_gpio_0";
+  $("btnNote").textContent = "push-buttons ← CH2";
+}
+
+function render() {
+  if (!st) return;
+  applyCfg(st.cfg);
+  for (let k = 0; k < 4; k++) {
+    const on = (st.led >> k) & 1, in2 = (st.in2 >> k) & 1;
+    leds[k].classList.toggle("on", !!on);
+    ch1Traces[k].classList.toggle("on", !!on);
+    ch1Pins[k].classList.toggle("on", !!on);
+    swTraces[k].classList.remove("on");
+    btnTraces[k].classList.toggle("on", !!in2);
+    btns[k].classList.toggle("pressed", held.has(k) || !!((st.btn >> k) & 1));
+    if (wantSw[k] !== ((st.sw >> k) & 1) && !swPending[k]) wantSw[k] = (st.sw >> k) & 1;
+    sws[k].knob.setAttribute("transform", wantSw[k] ? "translate(0,-18)" : "");
+  }
+  setBits(0, st.dout1); setBits(4, st.tri1); setBits(8, st.in2); setBits(12, st.tri2);
+  for (const tr of $("regs").rows) tr.classList.toggle("hit", +tr.dataset.off === st.off && st.op !== "-");
+  if (st.op !== "-") {
+    const addr = (0x41200000 + st.off).toString(16).toUpperCase();
+    const v = "0x" + st.val.toString(16).toUpperCase();
+    const reg = { 0: "GPIO_DATA", 4: "GPIO_TRI", 8: "GPIO2_DATA", 12: "GPIO2_TRI" }[st.off] || "?";
+    $("last").innerHTML = st.op === "R"
+      ? `last access: <b>read</b> 0x${addr} (${reg}) → ${v}`
+      : `last access: <b>write</b> 0x${addr} (${reg}) ← ${v}`;
+    $("axiop").textContent = st.op === "R" ? `R ${reg} → ${v}` : `W ${reg} ← ${v}`;
+  }
+}
+
+const swPending = [0, 0, 0, 0];
+function onState(ev) {
+  const now = performance.now();
+  if (prev && ev.rd >= prev.rd && now > prev.t) {
+    const dt = (now - prev.t) / 1000;
+    if (dt > 0.03) {
+      const r = (ev.rd - prev.rd) / dt, w = (ev.wr - prev.wr) / dt;
+      rps = rps * 0.5 + r * 0.5; wps = wps * 0.5 + w * 0.5;
+      prev = { rd: ev.rd, wr: ev.wr, t: now };
+    }
+  } else prev = { rd: ev.rd, wr: ev.wr, t: now };
+  st = ev;
+  for (let k = 0; k < 4; k++) if (swPending[k] && ((ev.sw >> k) & 1) === wantSw[k]) swPending[k] = 0;
+  render();
+}
+
+// Bus rates decay when no heartbeat arrives (e.g. the blink program sleeps in a delay loop).
+setInterval(() => {
+  if (prev && performance.now() - prev.t > 400) { rps *= 0.6; wps *= 0.6; }
+  $("rps").textContent = fmt(rps);
+  $("wps").textContent = fmt(wps);
+  const total = rps + wps;
+  const axi = $("axi");
+  axi.classList.toggle("active", total > 0.5);
+  axi.style.setProperty("--flow", (total > 100000 ? 0.35 : total > 1000 ? 0.7 : 1.4) + "s");
+  history.push(total); if (history.length > 120) history.shift();
+  drawSpark();
+}, 100);
+
+function fmt(x) {
+  if (x >= 1e6) return (x / 1e6).toFixed(2) + "M";
+  if (x >= 1e3) return (x / 1e3).toFixed(1) + "k";
+  return Math.round(x).toString();
+}
+
+function drawSpark() {
+  // Draw at the canvas's real pixel size so the line and text are not stretched.
+  const c = $("spark"), dpr = window.devicePixelRatio || 1;
+  const W = Math.max(1, Math.round(c.clientWidth * dpr)), H = Math.max(1, Math.round(c.clientHeight * dpr));
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  const g = c.getContext("2d");
+  g.clearRect(0, 0, W, H);
+  const max = Math.max(10, ...history);
+  g.strokeStyle = "#60a5fa"; g.lineWidth = 1.8 * dpr; g.lineJoin = "round"; g.beginPath();
+  const top = 18 * dpr, n = history.length;
+  history.forEach((v, i) => {           // newest sample at the right edge
+    const x = W - ((n - 1 - i) / 119) * W, y = H - 3 * dpr - (v / max) * (H - top - 4 * dpr);
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  });
+  g.stroke();
+  g.fillStyle = "#566275"; g.font = `${11 * dpr}px ui-monospace, monospace`;
+  g.fillText(`accesses / s · last 12 s · peak ${fmt(max)}`, 6 * dpr, 13 * dpr);
+}
+
+let txTimer = null;
+function onUart(line) {
+  const box = $("console");
+  const empty = box.querySelector(".empty"); if (empty) empty.remove();
+  box.append(line + "\n");
+  box.scrollTop = box.scrollHeight;
+  $("txled").classList.add("on");
+  $("uartTrace").classList.add("on");
+  clearTimeout(txTimer);
+  txTimer = setTimeout(() => { $("txled").classList.remove("on"); $("uartTrace").classList.remove("on"); }, 120);
+}
+
+function onStatus(ev) {
+  const run = $("run");
+  run.classList.toggle("running", ev.running);
+  $("psdot").style.display = ev.running ? "" : "none";
+  if (ev.running) $("runtxt").textContent = "running";
+  else if (ev.code === null) $("runtxt").textContent = "stopped";
+  else $("runtxt").textContent = `program ended · exit ${ev.code}` + (ev.code === 100 ? " (exception)" : "");
+}
+
+function onReset() {
+  st = null; prev = null; rps = wps = 0; cfg = null;
+  wantSw.fill(0); swPending.fill(0);
+  $("console").innerHTML = '<span class="empty">The program\'s xil_printf output appears here.</span>';
+  for (let k = 0; k < 4; k++) {
+    leds[k].classList.remove("on"); ch1Traces[k].classList.remove("on"); ch1Pins[k].classList.remove("on");
+    swTraces[k].classList.remove("on"); btnTraces[k].classList.remove("on");
+    sws[k].knob.setAttribute("transform", "");
+  }
+  $("axiop").textContent = ""; $("last").textContent = "last access: –";
+}
+
+function connect() {
+  const es = new EventSource("/events");
+  es.onmessage = (m) => {
+    const ev = JSON.parse(m.data);
+    if (ev.t === "hello") {
+      $("prog").innerHTML = `program <b>${ev.program}</b>`; $("psprog").textContent = ev.program + ".elf";
+      const ns = 2 ** ev.shift;
+      $("speed").innerHTML = ev.shift === 1 ? "speed <b>≈ Zybo</b>" : `speed <b>${ns} ns/insn</b>`;
+      $("speed").title = `QEMU -icount shift=${ev.shift},align=on: ${ns} ns per instruction (${1000 / ns} MIPS), kept in step with the wall clock`;
+    }
+    else if (ev.t === "state") onState(ev);
+    else if (ev.t === "uart") onUart(ev.line);
+    else if (ev.t === "status") onStatus(ev);
+    else if (ev.t === "reset") onReset();
+  };
+  es.onerror = () => { $("runtxt").textContent = "disconnected (server stopped?)"; $("run").classList.remove("running"); };
+}
+connect();
+
+// ---- Input: buttons are momentary (press / release), switches toggle ----
+function press(k) { if (held.has(k)) return; held.add(k); send("abcd"[k]); render(); btns[k].classList.add("pressed"); }
+function release(k) { if (!held.has(k)) return; held.delete(k); send("ABCD"[k]); render(); if (!st) btns[k].classList.remove("pressed"); }
+function flip(k) {
+  wantSw[k] ^= 1; swPending[k] = 1;
+  send(wantSw[k] ? "efgh"[k] : "EFGH"[k]);
+  sws[k].knob.setAttribute("transform", wantSw[k] ? "translate(0,-18)" : "");
+  setTimeout(() => { swPending[k] = 0; }, 1500);
+}
+btns.forEach((b, k) => {
+  b.addEventListener("pointerdown", (e) => { e.preventDefault(); b.setPointerCapture(e.pointerId); press(k); });
+  b.addEventListener("pointerup", () => release(k));
+  b.addEventListener("pointercancel", () => release(k));
+  b.addEventListener("keydown", (e) => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); press(k); } });
+  b.addEventListener("keyup", (e) => { if (e.key === " " || e.key === "Enter") release(k); });
+});
+sws.forEach((s, k) => {
+  s.addEventListener("click", () => flip(k));
+  s.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(k); } });
+});
+document.addEventListener("keydown", (e) => {
+  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key >= "1" && e.key <= "4") press(+e.key - 1);
+  else if (e.key >= "5" && e.key <= "8") flip(+e.key - 5);
+});
+document.addEventListener("keyup", (e) => { if (e.key >= "1" && e.key <= "4") release(+e.key - 1); });
+window.addEventListener("blur", () => { for (const k of [...held]) release(k); });
+
+const restart = () => post("/reset");
+$("reset").onclick = restart;
+$("rst").addEventListener("click", restart);
+$("rst").addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); restart(); } });
+$("quit").onclick = async () => { await post("/quit"); $("runtxt").textContent = "stopped — you can close this tab"; };
+</script>
+</body>
+</html>
