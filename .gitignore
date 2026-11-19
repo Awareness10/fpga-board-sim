@@ -1,0 +1,29 @@
+# Python / uv
+.venv/
+__pycache__/
+*.egg-info/
+
+# Builds (CMake/Conan, GHDL, Vivado, Vitis)
+build/
+CMakeUserPresets.json
+compile_commands.json
+*.cf
+*.o
+*.ghw
+*.vcd
+.Xil/
+*.jou
+*.log
+*.str
+vivado*.backup.*
+
+# Editors / OS
+.vscode/
+.idea/
+.cache/
+.DS_Store
+
+# Conan environment scripts (generated next to wherever conan runs)
+conanbuild*
+conanrun*
+deactivate_conan*
