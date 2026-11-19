@@ -36,4 +36,6 @@ class ZyboPs(ConanFile):
         env = Environment()
         env.define("CTEST_OUTPUT_ON_FAILURE", "1")
         with env.vars(self).apply():
-            cmake.test()
+            # Build env only: the run env is for the target (baremetal), so on Windows Conan
+            # writes it as .sh and can't combine it with the .bat build env. QEMU needs neither.
+            cmake.test(env="conanbuild")
