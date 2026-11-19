@@ -18,3 +18,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/boardsim"]
+
+[tool.uv]
+# Prefer an installed Python over one uv downloads. On some Windows machines, security
+# policies (Smart App Control, AppLocker, ...) block the unsigned Python builds uv
+# downloads; with a system Python installed, uv uses that instead.
+python-preference = "system"

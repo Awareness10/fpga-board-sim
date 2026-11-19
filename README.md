@@ -40,6 +40,12 @@ uv run boardsim setup      # Conan: default profile + the Arm toolchain recipe
 uv run boardsim test       # every GHDL testbench and every ARM program in QEMU
 ```
 
+**Windows:** if `uv sync` / `uv run` fails with a "blocked" or permission error, Windows
+is stopping the Python build uv downloads (Smart App Control or a company policy).
+Install Python 3.10+ from [python.org](https://www.python.org/downloads/) or
+`winget install Python.Python.3.13`; uv prefers an installed Python
+(`python-preference = "system"` in `pyproject.toml`).
+
 The first `uv run` creates a virtual environment with Conan in it. The first build
 downloads the Arm GNU toolchain (roughly 150 MB). `boardsim` finds QEMU, GHDL and Vivado
 in their usual install folders; set `QEMU`, `GHDL`, `GTKWAVE`, `XILINX_VIVADO` or
