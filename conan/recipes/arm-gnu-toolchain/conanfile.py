@@ -47,7 +47,8 @@ class ArmGnuToolchain(ConanFile):
 
     def build(self):
         host, ext, sha256 = self._release()
-        get(self, URL.format(v=self.version, host=host, ext=ext), sha256=sha256, strip_root=True)
+        # The Linux/macOS tarballs have one top folder; the Windows zip has bin/, lib/... at its root.
+        get(self, URL.format(v=self.version, host=host, ext=ext), sha256=sha256, strip_root=(ext != "zip"))
 
     def package(self):
         # Everything but the manuals (bin/, lib/gcc multilibs, arm-none-eabi/ newlib, libexec/).
