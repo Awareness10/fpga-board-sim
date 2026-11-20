@@ -27,7 +27,7 @@ the buttons to the LEDs. Every step has a stand-in that runs without a board:
 
 | Tutorial step | In Vivado / Vitis | Emulated here | Scripted for the real board |
 |---|---|---|---|
-| Zynq + AXI GPIO + connection automation | block design | `pl/src/axi_gpio.vhd` (same registers as Xilinx's AXI GPIO) and `pl/src/zybo_gpio_top.vhd` (the wiring) | `boardsim zybo xsa` |
+| Zynq + AXI GPIO + connection automation | block design | `pl/src/axi_gpio.vhdl` (same registers as Xilinx's AXI GPIO) and `pl/src/zybo_gpio_top.vhdl` (the wiring) | `boardsim zybo xsa` |
 | Generate bitstream | Vivado | `boardsim zybo test`: `zybo_gpio_tb` does the tutorial's register accesses over AXI and checks the LEDs follow the buttons | (same command) |
 | Platform / BSP | Vitis generates `xparameters.h`, `xgpio.h`, ... | `ps/xil/`: hand-written stand-ins with the same names and API | `boardsim zybo vitis` |
 | Import `xgpio_example.c`, run: LED blinks | Vitis + board | `boardsim zybo run xgpio_blink` | `boardsim zybo jtag xgpio_blink` |
@@ -94,7 +94,7 @@ Then `uv run boardsim zybo run myprog`. `zybo build --system-toolchain` uses an
 
 ## The custom AXI-Lite peripheral
 
-`pl/src/axi_lite_leds.vhd` is a small hand-written AXI-Lite slave, with its C driver in
+`pl/src/axi_lite_leds.vhdl` is a small hand-written AXI-Lite slave, with its C driver in
 `ps/drivers/axi_leds.h` and a test program in `ps/examples/axi_leds/`:
 
 | Offset | Name | Access | Bits |

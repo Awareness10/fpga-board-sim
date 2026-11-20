@@ -1,4 +1,4 @@
--- Self-checking testbench for axi_lite_leds. The AXI master in sim/axil_master_pkg.vhd
+-- Self-checking testbench for axi_lite_leds. The AXI master in sim/axil_master_pkg.vhdl
 -- plays the part of the ARM (the PS's M_AXI_GP0 port): what the C driver does in
 -- software, this does in simulation, cycle by cycle.
 library ieee;

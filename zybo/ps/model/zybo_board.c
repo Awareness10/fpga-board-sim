@@ -1,8 +1,8 @@
 /* A C model of the tutorial's PL design, for running under QEMU (which has no FPGA):
- * an AXI GPIO at 0x4120_0000 wired like zybo/pl/src/zybo_gpio_top.vhd
+ * an AXI GPIO at 0x4120_0000 wired like zybo/pl/src/zybo_gpio_top.vhdl
  *     channel 1 (all outputs) -> LD3..LD0
  *     channel 2 (all inputs)  <- BTN3..BTN0
- *     SW3..SW0 are on the board but not wired to the GPIO (as in zybo_gpio_top.vhd)
+ *     SW3..SW0 are on the board but not wired to the GPIO (as in zybo_gpio_top.vhdl)
  * plus a keyboard "board" on the UART:
  *     1 2 3 4   toggle BTN0..BTN3   (a terminal has no key-up events, so a key press
  *     5 6 7 8   toggle SW0..SW3      means pressed until you press it again)
@@ -55,7 +55,7 @@ static struct {
     int gui;                          /* machine-readable output for the GUI */
 } b;
 
-/* --- Wiring: what zybo_gpio_top.vhd connects to the GPIO pins ---------------- */
+/* --- Wiring: what zybo_gpio_top.vhdl connects to the GPIO pins ---------------- */
 static u32 leds(void) { return H.reg[R_DATA] & WIDTH_MASK; }  /* C_ALL_OUTPUTS: drives even if TRI=1 */
 static u32 gpio2_pins(void) { return b.btn; }            /* GPIO2 board interface: btns_4bits */
 

@@ -9,7 +9,7 @@
 #include "xparameters.h"
 #include "xstatus.h"
 
-/* Register offsets (xgpio_l.h, PG144), matching zybo/pl/src/axi_gpio.vhd */
+/* Register offsets (xgpio_l.h, PG144), matching zybo/pl/src/axi_gpio.vhdl */
 #define XGPIO_DATA_OFFSET  0x0
 #define XGPIO_TRI_OFFSET   0x4
 #define XGPIO_DATA2_OFFSET 0x8

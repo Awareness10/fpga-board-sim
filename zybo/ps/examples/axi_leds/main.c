@@ -4,7 +4,7 @@
  * QEMU has no FPGA fabric, so by default the driver runs against a fake register block
  * in RAM and the program checks what the driver wrote. On the real board, with the
  * bitstream loaded, build with -DAXI_LEDS_REAL=1 to talk to the hardware at 0x43C0_0000.
- * (The hardware itself is tested in simulation: zybo/pl/tb/axi_lite_leds_tb.vhd.) */
+ * (The hardware itself is tested in simulation: zybo/pl/tb/axi_lite_leds_tb.vhdl.) */
 #include "axi_leds.h"
 #include "bsp.h"
 

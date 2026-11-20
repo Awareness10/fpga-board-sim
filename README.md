@@ -82,7 +82,7 @@ behind the real chip`); then use `--shift 2` (half speed).
 buttons. That takes a change on both sides: in Vivado, what GPIO2 of `axi_gpio_0` is
 connected to; in the C code, what the program reads. The emulator models the tutorial's
 block design (GPIO2 = buttons); `zybo/ps/model/zybo_board.c` and
-`zybo/pl/src/zybo_gpio_top.vhd` are where that wiring lives.
+`zybo/pl/src/zybo_gpio_top.vhdl` are where that wiring lives.
 
 ### On the real Zybo (Windows or Linux, Vivado/Vitis 2023.2)
 
@@ -111,7 +111,7 @@ uv run boardsim basys3 program          # Vivado: bitstream + program a connecte
 
 `basys3_top` is a counter on the LEDs and the 7-segment display (`btnC` = reset,
 `sw(0)` = pause). Point any of the commands at **your own design** with
-`--dir <folder> --top <entity>`; the folder needs `src/*.vhd`, plus `tb/*_tb.vhd` for
+`--dir <folder> --top <entity>`; the folder needs `src/*.vhdl`, plus `tb/*_tb.vhdl` for
 tests and `constraints/<top>.xdc` for Vivado. Name the ports as in Digilent's master XDC
 (`clk`, `sw`, `btnC`/`U`/`L`/`R`/`D`, `led`, `seg`, `dp`, `an`). How the board view
 simulates your design, and how to make it fast: [basys3/README.md](basys3/README.md).

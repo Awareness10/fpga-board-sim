@@ -1,8 +1,9 @@
 """VHDL simulation with GHDL for a design folder laid out as
 
-    src/*.vhd      the design (what goes to Vivado)
-    tb/*_tb.vhd    self-checking testbenches, one per file
-    sim/*.vhd      simulation-only helpers (bus functional models, board views)
+    src/*.vhdl     the design (what goes to Vivado)
+    tb/*_tb.vhdl   self-checking testbenches, one per file
+    sim/*.vhdl     simulation-only helpers (bus functional models, board views)
+(.vhd works too.)
 
 Build products go to <design>/build/: the GHDL work library in build/ghdl/, waveforms
 in build/<testbench>.ghw. Works the same on Windows, macOS and Linux.
@@ -82,6 +83,19 @@ def require_ghdl():
     return ghdl
 
 
+VHDL_EXTS = (".vhdl", ".vhd")
+
+
+def vhdl_files(folder, suffix=""):
+    """VHDL files in <folder> whose name (without extension) ends in <suffix>, .vhdl or .vhd."""
+    return sorted(f for f in Path(folder).glob("*") if f.suffix in VHDL_EXTS and f.stem.endswith(suffix))
+
+
+def vhdl_file(folder, stem):
+    """<folder>/<stem>.vhdl or .vhd, whichever exists (None if neither)."""
+    return next((Path(folder) / (stem + e) for e in VHDL_EXTS if (Path(folder) / (stem + e)).exists()), None)
+
+
 class Design:
     def __init__(self, root, extra_sim=(), stop_time="10ms"):
         self.root = Path(root).resolve()
@@ -96,12 +110,12 @@ class Design:
         return [f"--std={STD}", f"--workdir={self.work}", "-frelaxed"]
 
     def files(self, extra=()):
-        sim = sorted(f for d in [*self.extra_sim, self.root / "sim"] for f in d.glob("*.vhd"))
-        return [*sim, *sorted((self.root / "src").glob("*.vhd")), *sorted((self.root / "tb").glob("*.vhd")),
+        sim = [f for d in [*self.extra_sim, self.root / "sim"] for f in vhdl_files(d)]
+        return [*sim, *vhdl_files(self.root / "src"), *vhdl_files(self.root / "tb"),
                 *[Path(e) for e in extra]]
 
     def testbenches(self):
-        return [f.stem for f in sorted((self.root / "tb").glob("*_tb.vhd"))]
+        return [f.stem for f in vhdl_files(self.root / "tb", "_tb")]
 
     def _ghdl(self, *args, log=None, **kw):
         cmd = [self.ghdl, *args]

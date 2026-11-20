@@ -9,7 +9,7 @@
 #   <top entity>  e.g. basys3_top; constraints/<top>.xdc must exist
 #   program       also load the bitstream onto a connected Basys3 (JTAG over USB)
 #
-# Sources: every src/*.vhd as VHDL-2008.
+# Sources: every src/*.vhdl (or .vhd) as VHDL-2008.
 # Output: <design dir>/build/vivado/<top>/ with <top>.bit, utilization.rpt and timing.rpt.
 
 if {[llength $argv] < 2} {
@@ -25,7 +25,7 @@ set xdc  [file join $dir constraints $top.xdc]
 file mkdir $out
 
 set srcs {}
-foreach f [lsort [glob -directory [file join $dir src] *.vhd]] {
+foreach f [lsort [glob -nocomplain -directory [file join $dir src] *.vhdl *.vhd]] {
     lappend srcs $f
 }
 if {![file exists $xdc]} { puts "ERROR: missing $xdc"; exit 1 }

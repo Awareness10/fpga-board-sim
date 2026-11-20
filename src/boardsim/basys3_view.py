@@ -37,12 +37,12 @@ def _strip_comments(text):
 
 def find_entity(src_dir, top):
     """(file, ports [(name, mode, width or None)], generic names) for entity `top`."""
-    for f in sorted(Path(src_dir).glob("*.vhd")):
+    for f in ghdl.vhdl_files(src_dir):
         text = _strip_comments(f.read_text(errors="replace"))
         m = re.search(rf"\bentity\s+{re.escape(top)}\s+is\b(.*?)\bend\b", text, re.I | re.S)
         if m:
             return f, _ports(m.group(1)), _generics(m.group(1))
-    raise SystemExit(f"entity {top} not found in {src_dir}/*.vhd (use --top to name your top-level entity)")
+    raise SystemExit(f"entity {top} not found in {src_dir}/*.vhdl (use --top to name your top-level entity)")
 
 
 def _clause(body, keyword):
@@ -291,13 +291,13 @@ def run(design_dir, top, extra_sim=(), generics=None, clk_hz=None, frame_ms=10.0
 
     gui = design.build / "gui"
     gui.mkdir(parents=True, exist_ok=True)
-    harness_file = gui / "boardsim_basys3_gui.vhd"
+    harness_file = gui / "boardsim_basys3_gui.vhdl"
     harness_file.write_text(harness(top, ports, generics, clk_hz))
 
     # Only the design and the harness: the testbenches aren't needed (and may not compile).
     design.work = design.build / "ghdl-gui"
     design.work.mkdir(parents=True, exist_ok=True)
-    files = [*sorted((design.root / "src").glob("*.vhd")), harness_file]
+    files = [*ghdl.vhdl_files(design.root / "src"), harness_file]
     r = subprocess.run([design.ghdl, "-i", *design.flags, *map(str, files)], cwd=design.root,
                        capture_output=True, text=True)
     if r.returncode or not design.elaborate("boardsim_basys3_gui"):

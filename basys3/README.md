@@ -11,7 +11,7 @@ uv run boardsim basys3 program          # Vivado: bitstream + program a connecte
 | Folder | |
 |---|---|
 | `src/` | the design: `basys3_top` (counter on LEDs + 7-segment), `counter`, `seven_seg` |
-| `tb/` | self-checking testbenches, one per `*_tb.vhd` |
+| `tb/` | self-checking testbenches, one per `*_tb.vhdl` |
 | `sim/` | `basys3_sim_pkg`: testbench helpers that print the board (LEDs, switches, 7-segment as text) |
 | `constraints/` | Digilent's master XDC, and `<top>.xdc` per top-level entity |
 | `vivado/build.tcl` | batch synthesis → implementation → bitstream (→ program) |
@@ -23,8 +23,8 @@ Every command takes `--dir <folder>` (default: this folder) and the board comman
 
 ```
 my_design/
-  src/*.vhd              your design
-  tb/*_tb.vhd            testbenches (for test / wave)
+  src/*.vhdl              your design
+  tb/*_tb.vhdl            testbenches (for test / wave)
   constraints/<top>.xdc  pins (for bit / program): copy lines from Basys-3-Master.xdc
 ```
 
@@ -37,7 +37,7 @@ Testbenches in your folder can use `basys3_sim_pkg` from this folder's `sim/`.
 ## How the board view works
 
 `basys3 run` generates a small VHDL harness around your top entity
-(`build/gui/boardsim_basys3_gui.vhd`) and runs it in GHDL. The harness connects every
+(`build/gui/boardsim_basys3_gui.vhdl`) and runs it in GHDL. The harness connects every
 port it recognises by name, as in the Basys3 master XDC: `clk`, `sw`, `btnC`, `btnU`,
 `btnL`, `btnR`, `btnD`, `led`, `seg`, `dp`, `an` (narrower vectors like
 `led(7 downto 0)` are fine). Other outputs are left open; other inputs are an error.

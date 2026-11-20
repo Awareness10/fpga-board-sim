@@ -1,4 +1,4 @@
-/* Driver for the axi_lite_leds peripheral in zybo/pl/src/axi_lite_leds.vhd.
+/* Driver for the axi_lite_leds peripheral in zybo/pl/src/axi_lite_leds.vhdl.
  * The register layout below must match the VHDL register map.
  *
  * Every function takes the register block as a pointer instead of a fixed address, so
