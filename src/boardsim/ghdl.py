@@ -150,7 +150,14 @@ class Design:
             log = self.build / f"{tb}.log"
             log.unlink(missing_ok=True)
             passed = self.elaborate(tb, log) and self.run(tb, log=log).returncode == 0
+            # Reaching --stop-time exits with 0, but then the testbench never got to its end
+            # (and maybe not to its checks either): count that as a failure.
+            timed_out = passed and "stopped by --stop-time" in log.read_text(errors="replace")
+            passed = passed and not timed_out
             print(f"{term.ok('PASS') if passed else term.bad('FAIL')}  {tb}", flush=True)
+            if timed_out:
+                print(term.dim(f"        did not finish within {self.stop_time} of simulated time: end the "
+                               "testbench with std.env.finish (or stop its clock) sooner"))
             if not passed:
                 ok = False
                 lines = [l for l in log.read_text(errors="replace").splitlines()
