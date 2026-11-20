@@ -1,4 +1,4 @@
-/* Minimal board support for the Zynq-7000 PS (Zybo Z7), real or in QEMU's xilinx-zynq-a9:
+/* Minimal board support for the Zynq-7000 PS (Zybo), real or in QEMU's xilinx-zynq-a9:
  * UART output, exit codes, CP15 register access, the A9 global timer.
  * No libc: everything a program needs is here. */
 #pragma once

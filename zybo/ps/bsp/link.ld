@@ -1,4 +1,4 @@
-/* Zynq-7000 PS memory map (Zybo Z7: 1 GB DDR at 0x0000_0000).
+/* Zynq-7000 PS memory map (Zybo: 512 MB DDR at 0x0000_0000).
  * The first 1 MB of DDR overlaps the on-chip memory (OCM) after boot, so programs
  * start at 0x0010_0000, like Xilinx's own standalone BSP. QEMU's xilinx-zynq-a9 machine
  * loads the ELF at these addresses and jumps to the entry point (_start). */

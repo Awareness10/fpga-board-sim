@@ -1,7 +1,7 @@
 [project]
 name = "boardsim"
 version = "0.1.0"
-description = "Zybo Z7 and Basys3 boards without the hardware: QEMU, GHDL and a live board view"
+description = "Zybo and Basys3 boards without the hardware: QEMU, GHDL and a live board view"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"

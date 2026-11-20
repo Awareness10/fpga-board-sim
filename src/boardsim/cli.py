@@ -1,8 +1,8 @@
-"""boardsim: the Zybo Z7 and Basys3 boards without the hardware.
+"""boardsim: the Zybo and Basys3 boards without the hardware.
 
     uv run boardsim doctor              which tools are installed, and how to get the rest
     uv run boardsim test                every testbench and every program
-    uv run boardsim zybo --help         Zybo Z7: ARM programs in QEMU, PL in GHDL
+    uv run boardsim zybo --help         Zybo: ARM programs in QEMU, PL in GHDL
     uv run boardsim basys3 --help       Basys3: VHDL in GHDL, Vivado bitstreams
 """
 import argparse
@@ -229,7 +229,7 @@ def main(argv=None):
     p.add_argument("tool", choices=["ghdl", "surfer"], help="ghdl (VHDL simulator) or surfer (waveform viewer)")
     p.add_argument("--force", action="store_true", help="download again even if it is installed")
     p.set_defaults(fn=cmd_install)
-    zybo = sub.add_parser("zybo", help="Zybo Z7 (Zynq-7000): ARM in QEMU, PL in GHDL").add_subparsers(dest="zcmd", required=True)
+    zybo = sub.add_parser("zybo", help="Zybo (Zynq-7000): ARM in QEMU, PL in GHDL").add_subparsers(dest="zcmd", required=True)
     p = zybo.add_parser("build", help="build the ARM programs (and run them as tests)")
     p.add_argument("--no-test", action="store_true")
     p.add_argument("--system-toolchain", action="store_true", help="use your own arm-none-eabi-gcc (PATH or ARM_GNU_PREFIX)")
@@ -250,14 +250,15 @@ def main(argv=None):
     p.add_argument("testbench", nargs="?", default="zybo_gpio_tb")
     p.set_defaults(fn=cmd_zybo_wave)
 
-    boards = ("zybo", "z7-10", "z7-20")   # the original Zybo, Zybo Z7-10, Zybo Z7-20
+    boards = ("zybo", "z7-10", "z7-20")   # the course's original Zybo; Zybo Z7-10/-20 (outside the course)
+    board_help = "zybo: the original Zybo (default, the course's board); z7-10, z7-20: Zybo Z7, outside the course"
     p = zybo.add_parser("xsa", help="Vivado: block design, bitstream and .xsa for the real board")
-    p.add_argument("--board", choices=boards, default="zybo")
+    p.add_argument("--board", choices=boards, default="zybo", help=board_help)
     p.add_argument("--bd-only", action="store_true", help="stop after the block design (quick check)")
     p.set_defaults(fn=cmd_zybo_xsa)
     p = zybo.add_parser("vitis", help="Vitis: platform + apps from the .xsa (same source as the emulation)")
     p.add_argument("apps", nargs="*", help="default: xgpio_blink xgpio_btns")
-    p.add_argument("--board", choices=boards, default="zybo")
+    p.add_argument("--board", choices=boards, default="zybo", help=board_help)
     p.set_defaults(fn=cmd_zybo_vitis)
     p = zybo.add_parser("jtag", help="load the bitstream and an app onto a connected Zybo over JTAG")
     p.add_argument("app", nargs="?", default="xgpio_blink")

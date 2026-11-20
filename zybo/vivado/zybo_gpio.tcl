@@ -5,9 +5,10 @@
 #       GPIO2 (channel 2) = btns_4bits
 # The board interfaces carry the pin constraints, so no .xdc is needed.
 #
-# Boards: zybo (the original Zybo, XC7Z010, 512 MB DDR3; default), z7-10, z7-20 (Zybo Z7).
+# Boards: zybo (the original Zybo, XC7Z010, 512 MB DDR3: the course's board, default).
+#         z7-10, z7-20 (Zybo Z7): outside the course, kept because they cost two lines.
 #
-# Easiest: `uv run boardsim zybo xsa [--board z7-10] [--bd-only]`. Directly:
+# Easiest: `uv run boardsim zybo xsa [--bd-only]`. Directly:
 #   vivado -mode batch -source zybo/vivado/zybo_gpio.tcl -tclargs <out dir> [zybo|z7-10|z7-20] [bd]
 #     "bd": stop after the block design (quick check, no synthesis)
 # Output: <out dir>/<name>/      (project; open the .xpr in the GUI to look around)

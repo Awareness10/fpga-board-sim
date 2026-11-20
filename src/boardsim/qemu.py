@@ -24,7 +24,7 @@ import sys
 import threading
 import time
 
-MACHINE = ["-M", "xilinx-zynq-a9", "-m", "1G", "-display", "none", "-monitor", "none",
+MACHINE = ["-M", "xilinx-zynq-a9", "-m", "512M", "-display", "none", "-monitor", "none",
            "-semihosting", "-serial", "null"]          # UART0 unused, UART1 = the socket
 
 INSTALL_HINT = {

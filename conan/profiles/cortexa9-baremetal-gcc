@@ -1,4 +1,4 @@
-# Bare-metal Cortex-A9 (the Zynq-7000 PS on the Zybo Z7) with the Arm GNU Toolchain,
+# Bare-metal Cortex-A9 (the Zynq-7000 PS on the Zybo) with the Arm GNU Toolchain,
 # downloaded by Conan for your OS (conan/recipes/arm-gnu-toolchain). No OS, no libc.
 #
 #   conan build zybo/ps -pr:h conan/profiles/cortexa9-baremetal-gcc -pr:b default --build=missing

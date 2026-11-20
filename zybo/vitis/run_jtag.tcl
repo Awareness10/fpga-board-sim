@@ -1,5 +1,5 @@
 # Load one of the apps onto the real Zybo over JTAG (what Vitis "Run" does), no IDE needed.
-# Board: JP5 jumper on JTAG (or any boot mode), USB cable in PROG/UART (Zybo J11, Zybo Z7 J12), power on.
+# Board: JP5 jumper on JTAG (or any boot mode), USB cable in PROG/UART (J11), power on.
 #
 # Easiest: `uv run boardsim zybo jtag <app>`, after `boardsim zybo vitis`. Directly:
 #   xsdb zybo/vitis/run_jtag.tcl <workspace dir> <app>

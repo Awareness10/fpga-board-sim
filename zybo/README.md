@@ -1,4 +1,4 @@
-# Zybo / Zybo Z7 (Zynq-7000)
+# Zybo (Zynq-7000)
 
 The Zybo's Zynq-7000 chip has two halves, and each one is handled differently here:
 
@@ -109,14 +109,14 @@ master). Port names follow Vivado's `s_axi_*` convention, so Vivado recognises t
 interface when you add the file to a block design with *Add Module*. To use it on the
 board: add it next to the Zynq PS, run connection automation (it lands at `0x43C0_0000`),
 make `led`, `sw`, `btn` external, uncomment those pins in a copy of
-`pl/constraints/Zybo-Master.xdc` (original Zybo) or `Zybo-Z7-Master.xdc`, and build `axi_leds` with `-DAXI_LEDS_REAL=1`.
+`pl/constraints/Zybo-Master.xdc`, and build `axi_leds` with `-DAXI_LEDS_REAL=1`.
 
 ## On the real board
 
 `vivado/zybo_gpio.tcl` (run by `boardsim zybo xsa`) does what you would click in the GUI:
 
-1. New project, *Boards* tab → *Zybo* (or *Zybo Z7-10* / *Z7-20*). Vivado 2023.2 ships the
-   Zybo Z7 board files but not the original Zybo's; the script loads Digilent's copy from
+1. New project, *Boards* tab → *Zybo*. Vivado 2023.2 doesn't ship the original Zybo's
+   board files; the script loads Digilent's copy from
    `vivado/board_files/` (in the GUI: *Settings → Board Repository*, or install them from
    github.com/Digilent/vivado-boards).
    Set *Target language* to VHDL (in the wizard, or *Settings → General* later) so the
@@ -139,7 +139,7 @@ program with `ps/examples/<app>/xgpio_example.c` imported unchanged.
 
 `vitis/run_jtag.tcl` (run by `boardsim zybo jtag`) does what Vitis *Run* does: reset,
 program the PL with the bitstream, `ps7_init` + `ps7_post_config`, download the `.elf`,
-run. Set jumper JP5 to JTAG, connect USB to the PROG/UART port (J11 on the Zybo, J12 on the Zybo Z7), power on. The serial
+run. Set jumper JP5 to JTAG, connect USB to the PROG/UART port (J11), power on. The serial
 console is the board's second USB serial port at 115200 8N1 (Windows: a COM port; Linux:
 usually `/dev/ttyUSB1`).
 
@@ -154,6 +154,8 @@ Platform notes:
   `LD_LIBRARY_PATH=$XILINX_VITIS/tps/lnx64/cmake-3.24.2/libs/Ubuntu vitis -w zybo/build/hw/vitis_ws`.
 - **macOS:** there is no Vivado or Vitis; use the emulator, and a Windows/Linux machine
   for the real board.
+
+The Zybo Z7 (outside the course) is covered in the main [README](../README.md#outside-the-course-zybo-z7).
 
 ## Further: co-simulation
 

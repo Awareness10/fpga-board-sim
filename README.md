@@ -2,7 +2,7 @@
 
 [![test](https://github.com/Awareness10/fpga-board-sim/actions/workflows/test.yml/badge.svg)](https://github.com/Awareness10/fpga-board-sim/actions/workflows/test.yml)
 
-Work with the Digilent **Zybo** / **Zybo Z7** (Zynq-7000) and **Basys3** (Artix-7) boards without
+Work with the Digilent **Zybo** (Zynq-7000) and **Basys3** (Artix-7) boards without
 having the hardware on your desk, and use the same files with Vivado/Vitis when you do.
 Made for USN's course [CS4110-1 26H Hardware/Software Co-Design of Embedded Systems](https://www.usn.no/studier/studie-og-emneplaner/#/emne/CS4110_1_2026_H%C3%98ST).
 
@@ -57,7 +57,7 @@ downloads the Arm GNU toolchain (roughly 150 MB). `boardsim` finds QEMU, GHDL an
 in their usual install folders; set `QEMU`, `GHDL`, `GTKWAVE`, `SURFER`, `XILINX_VIVADO` or
 `XILINX_VITIS` if yours are somewhere else.
 
-## Zybo (original and Z7)
+## Zybo
 
 ```sh
 uv run boardsim zybo run                  # xgpio_btns on the emulated board, in the browser
@@ -92,10 +92,8 @@ uv run boardsim zybo vitis        # Vitis: platform + xgpio_blink and xgpio_btns
 uv run boardsim zybo jtag xgpio_btns   # load bitstream + program over JTAG and run it
 ```
 
-The default is the original **Zybo** (XC7Z010, 512 MB DDR3); use `--board z7-10` or
-`--board z7-20` for a Zybo Z7. The board files differ (DDR, button pins), so pick the one
-printed on your board: "ZYBO" or "ZYBO Z7". The apps are built from the
-**same** `xgpio_example.c` files the emulator runs. To look around in the IDEs, open
+This is the original **Zybo** (XC7Z010, 512 MB DDR3), the board used in the course.
+The apps are built from the **same** `xgpio_example.c` files the emulator runs. To look around in the IDEs, open
 `zybo/build/hw/zybo/zybo.xpr` in Vivado and `zybo/build/hw/vitis_ws` as the
 Vitis workspace. For JTAG, set jumper JP5 to JTAG and connect USB to the PROG/UART port;
 the program's output is on the board's serial port at 115200 baud. More detail, including
@@ -129,6 +127,16 @@ zybo/vivado, vitis/  scripts for the real board
 basys3/              VHDL designs, testbenches, constraints, Vivado script
 ```
 
+## Outside the course: Zybo Z7
+
+The course uses the original Zybo and the Basys3. The newer **Zybo Z7** is supported only
+because it got added along the way: `boardsim zybo xsa --board z7-10` (or `z7-20`), then
+`boardsim zybo vitis --board z7-10`. It uses different board files (1 GB DDR3L, other
+button pins), so the original Zybo's build won't run on a Z7 and vice versa: check
+whether your board says "ZYBO" or "ZYBO Z7". On a Z7 the USB-UART port is J12, and
+`zybo/pl/constraints/Zybo-Z7-Master.xdc` has its pins. The Vivado build passes, but it
+hasn't been tried on a real Z7, and the board view always shows the original Zybo.
+
 ## Status
 
 - **Linux** (Arch-based, Vivado/Vitis 2023.2): all tests, both board views, the Basys3
@@ -137,8 +145,7 @@ basys3/              VHDL designs, testbenches, constraints, Vivado script
 - **Windows and macOS:** `boardsim test` passes in CI (`.github/workflows/test.yml`):
   the Conan toolchain download, the ARM builds, QEMU and GHDL. The board views and the
   Vivado/Vitis commands haven't been tried there by a person yet.
-- **Not yet tested:** `basys3 program` on a real board, and the Zybo Z7 (`--board z7-10`,
-  `z7-20`) on real hardware.
+- **Not yet tested:** `basys3 program` on a real board.
 
 Reports and fixes are welcome.
 

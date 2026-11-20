@@ -9,7 +9,7 @@ The model prints "@zybo key=value ..." lines once the page asks for them ('@'), 
 explicit input commands (a-d/A-D = press/release BTN0-3, e-h/E-H = SW0-3 on/off).
 
 QEMU runs with -icount shift=N,align=on: 2^N ns per instruction, kept in step with the
-wall clock. N=1 is about the speed of the Zybo's 650 MHz Cortex-A9 (667 MHz on the Zybo Z7).
+wall clock. N=1 is about the speed of the Zybo's 650 MHz Cortex-A9.
 """
 import re
 import threading
