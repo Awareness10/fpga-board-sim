@@ -49,3 +49,6 @@ jobs:
         run: uv run boardsim new zybo ci_ip && uv run boardsim new zybo ci_gpio --gpio && uv run boardsim new basys3 ci_basys3
 
       - run: uv run boardsim test
+
+      - name: One assignment's tests by name (zybo test <name> filters ctest through the shell)
+        run: uv run boardsim zybo test ci_ip
