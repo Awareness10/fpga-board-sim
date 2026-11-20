@@ -101,12 +101,17 @@ def conan_setup(quiet=False):
     subprocess.run([conan, "export", str(TOOLCHAIN_RECIPE)], stdout=out, stderr=out, check=True)
 
 
-def conan_build(project, profile, test=True):
+def conan_build(project, profile, test=True, only=None):
+    """Build, and unless test=False run the ctests: all of them, or only the one called <only>."""
     conan_setup(quiet=True)
     cmd = [find_conan(), "build", str(project), "-pr:h", str(CONAN_PROFILES / profile), "-pr:b", "default",
            "--build=missing"]
     if not test:
         cmd += ["-c", "tools.build:skip_test=True"]
+    elif only:
+        # Conan runs ctest through a shell (sh, or cmd on Windows): double quotes keep ^ and $
+        # literal in both.
+        cmd += ["-c", f'tools.cmake:ctest_args=["-R", "\\"^{only}$\\"", "--no-tests=error"]']
     return run(cmd)
 
 

@@ -10,6 +10,8 @@ set(CMAKE_C_EXTENSIONS ON)               # GNU C: statement expressions, inline 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)    # for clangd / editor completion
 
 set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/bsp/link.ld)
+# Every .elf in build/<config>/, including the ones from assignments/ (subdirectories).
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_compile_options(
     -ffreestanding -fno-builtin -fno-common
@@ -82,17 +84,26 @@ target_include_directories(zybo_model PUBLIC xil)
 target_compile_definitions(zybo_model PUBLIC ZYBO_BOARD_MODEL=1 SDT)
 target_link_libraries(zybo_model PUBLIC bsp)
 
-# zybo_board_program(<name> <source> KEYS <keys> EXPECT <regex>)
-#   Like zynq_program, but linked with the board model. The ctest types KEYS into the UART
-#   (1-4 toggle BTN0-3, 5-8 SW0-3, . waits, q quits) and passes if the output matches
-#   EXPECT (the [zybo] board lines) and the program exits with 0.
-function(zybo_board_program name source)
-    cmake_parse_arguments(ARG "" "KEYS;EXPECT" "" ${ARGN})
-    zynq_program(${name} ${source} NO_TEST)
+# zybo_board_program(<name> <sources...> [KEYS <keys>] [EXPECT <regex>] [NO_TEST])
+#   Like zynq_program, but linked with the board model and the Xilinx BSP stand-ins (xil/),
+#   with ZYBO_BOARD_MODEL defined. The ctest types KEYS into the UART (1-4 toggle BTN0-3,
+#   5-8 SW0-3, . waits, q quits) and passes if the output matches EXPECT (the [zybo] board
+#   lines; leave it out to only check the exit code) and the program exits with 0.
+function(zybo_board_program name)
+    cmake_parse_arguments(ARG "NO_TEST" "KEYS;EXPECT" "" ${ARGN})
+    zynq_program(${name} ${ARG_UNPARSED_ARGUMENTS} NO_TEST)
     target_link_libraries(${name} PRIVATE zybo_model)
-    add_test(NAME ${name}
-        COMMAND ${Python3_EXECUTABLE} ${QEMU_RUN} $<TARGET_FILE:${name}>
-                --keys "${ARG_KEYS}" --expect "${ARG_EXPECT}" --timeout 20)
+    if(NOT ARG_NO_TEST)
+        set(test_args --timeout 20)
+        if(DEFINED ARG_KEYS)
+            list(APPEND test_args --keys "${ARG_KEYS}")
+        endif()
+        if(DEFINED ARG_EXPECT)
+            list(APPEND test_args --expect "${ARG_EXPECT}")
+        endif()
+        add_test(NAME ${name}
+            COMMAND ${Python3_EXECUTABLE} ${QEMU_RUN} $<TARGET_FILE:${name}> ${test_args})
+    endif()
 endfunction()
 
 # Steps 14-17: the example as imported. Expect LD0 on, off, on.
@@ -104,3 +115,14 @@ zybo_board_program(xgpio_blink examples/xgpio_blink/xgpio_example.c
 zybo_board_program(xgpio_btns examples/xgpio_btns/xgpio_example.c
     KEYS "1.2.4.1.5.q"
     EXPECT "LD3..LD0 \\.\\.\\.\\*.*LD3..LD0 \\.\\.\\*\\*.*LD3..LD0 \\*\\.\\*\\*.*LD3..LD0 \\*\\.\\*\\.   BTN3..BTN0 #\\.#\\.   SW3..SW0 \\.\\.\\.\\..*LD3..LD0 \\*\\.\\*\\.   BTN3..BTN0 #\\.#\\.   SW3..SW0 \\.\\.\\.#.*quit")
+
+# --- Your assignments: every assignments/<name>/ps/CMakeLists.txt (`boardsim new zybo <name>`) ---
+# Re-globbed on every build (boardsim always runs the configure step), so a new
+# assignment is picked up without any change here.
+file(GLOB ASSIGNMENT_LISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../assignments/*/ps/CMakeLists.txt)
+foreach(list_file ${ASSIGNMENT_LISTS})
+    get_filename_component(ps_dir ${list_file} DIRECTORY)
+    get_filename_component(assignment_dir ${ps_dir} DIRECTORY)
+    get_filename_component(assignment ${assignment_dir} NAME)
+    add_subdirectory(${ps_dir} ${CMAKE_BINARY_DIR}/assignments/${assignment})
+endforeach()
