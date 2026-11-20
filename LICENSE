@@ -22,4 +22,5 @@ SOFTWARE.
 
 Third-party files keep their own notices: Xilinx/AMD example code (MIT, see the
 file headers in zybo/ps/examples/xgpio_*) and Digilent master constraint files
-(MIT, Digilent Inc.) in */constraints/*-Master.xdc.
+(MIT, Digilent Inc.) in */constraints/*-Master.xdc, and Digilent board files (MIT,
+Digilent Inc.) in zybo/vivado/board_files/.

@@ -30,3 +30,9 @@ webtalk*
 conanbuild*
 conanrun*
 deactivate_conan*
+
+# Local copy of Digilent's Zybo Z7 reference manual (their copyright, not ours)
+docs/Zybo Z7 Reference Manual - Digilent Reference.html
+docs/Zybo Z7 Reference Manual - Digilent Reference_files/
+docs/Zybo Reference Manual - Digilent Reference.html
+docs/Zybo Reference Manual - Digilent Reference_files/

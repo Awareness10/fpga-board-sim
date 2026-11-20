@@ -2,11 +2,11 @@
 
 [![test](https://github.com/Awareness10/fpga-board-sim/actions/workflows/test.yml/badge.svg)](https://github.com/Awareness10/fpga-board-sim/actions/workflows/test.yml)
 
-Work with the Digilent **Zybo Z7** (Zynq-7000) and **Basys3** (Artix-7) boards without
+Work with the Digilent **Zybo** / **Zybo Z7** (Zynq-7000) and **Basys3** (Artix-7) boards without
 having the hardware on your desk, and use the same files with Vivado/Vitis when you do.
 Made for USN's course [CS4110-1 26H Hardware/Software Co-Design of Embedded Systems](https://www.usn.no/studier/studie-og-emneplaner/#/emne/CS4110_1_2026_H%C3%98ST).
 
-| | Zybo Z7 | Basys3 |
+| | Zybo | Basys3 |
 |---|---|---|
 | **Emulated** | ARM programs run in QEMU (`xilinx-zynq-a9`) against a model of the board; the PL designs are tested in GHDL | your VHDL runs in GHDL, clock-accurate |
 | **Live board view** | LEDs, buttons, switches, AXI GPIO registers, bus activity, UART console | 16 LEDs, 16 switches, 5 buttons, 4-digit 7-segment display |
@@ -57,7 +57,7 @@ downloads the Arm GNU toolchain (roughly 150 MB). `boardsim` finds QEMU, GHDL an
 in their usual install folders; set `QEMU`, `GHDL`, `GTKWAVE`, `SURFER`, `XILINX_VIVADO` or
 `XILINX_VITIS` if yours are somewhere else.
 
-## Zybo Z7
+## Zybo (original and Z7)
 
 ```sh
 uv run boardsim zybo run                  # xgpio_btns on the emulated board, in the browser
@@ -74,7 +74,7 @@ The programs are in `zybo/ps/examples/`: `hello`, `asm_sum` (C calling assembly)
 are what runs.
 
 In the board view, hold keys `1`–`4` (or click) for BTN0–BTN3; **PS-SRST** restarts the
-program. QEMU runs at about the speed of the Zybo's 667 MHz Cortex-A9
+program. QEMU runs at about the speed of the Zybo's 650 MHz Cortex-A9
 (`-icount shift=1`). If your computer can't keep up, the console says so (`QEMU is N s
 behind the real chip`); then use `--shift 2` (half speed).
 
@@ -92,9 +92,11 @@ uv run boardsim zybo vitis        # Vitis: platform + xgpio_blink and xgpio_btns
 uv run boardsim zybo jtag xgpio_btns   # load bitstream + program over JTAG and run it
 ```
 
-Use `--board z7-10` for the Zybo Z7-10 (default: Z7-20). The apps are built from the
+The default is the original **Zybo** (XC7Z010, 512 MB DDR3); use `--board z7-10` or
+`--board z7-20` for a Zybo Z7. The board files differ (DDR, button pins), so pick the one
+printed on your board: "ZYBO" or "ZYBO Z7". The apps are built from the
 **same** `xgpio_example.c` files the emulator runs. To look around in the IDEs, open
-`zybo/build/hw/zybo_z7-20/zybo_z7-20.xpr` in Vivado and `zybo/build/hw/vitis_ws` as the
+`zybo/build/hw/zybo/zybo.xpr` in Vivado and `zybo/build/hw/vitis_ws` as the
 Vitis workspace. For JTAG, set jumper JP5 to JTAG and connect USB to the PROG/UART port;
 the program's output is on the board's serial port at 115200 baud. More detail, including
 the same steps by hand in the GUI: [zybo/README.md](zybo/README.md).

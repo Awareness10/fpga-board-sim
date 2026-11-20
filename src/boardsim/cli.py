@@ -124,6 +124,11 @@ def zybo_hw_dir():
     return tools.repo_dir("zybo") / "build" / "hw"
 
 
+def zybo_hw_name(board):
+    """Vivado project / .xsa name, as zybo/vivado/zybo_gpio.tcl names it."""
+    return "zybo" if board == "zybo" else f"zybo_{board}"
+
+
 def cmd_zybo_xsa(args):
     vivado = tools.require(tools.find_vivado(), "Vivado")
     out = zybo_hw_dir()
@@ -135,7 +140,7 @@ def cmd_zybo_xsa(args):
 
 def cmd_zybo_vitis(args):
     vitis = tools.require(tools.find_vitis(), "Vitis")
-    xsa = zybo_hw_dir() / f"zybo_{args.board}.xsa"
+    xsa = zybo_hw_dir() / f"{zybo_hw_name(args.board)}.xsa"
     if not xsa.exists():
         raise SystemExit(f"{xsa} not found: run `boardsim zybo xsa --board {args.board}` first")
     ws = zybo_hw_dir() / "vitis_ws"
@@ -146,7 +151,9 @@ def cmd_zybo_vitis(args):
 def cmd_zybo_jtag(args):
     xsdb = tools.require(tools.find_xsdb(), "XSDB (part of Vitis)")
     cmd = [xsdb, tools.repo_dir("zybo", "vitis", "run_jtag.tcl"), zybo_hw_dir() / "vitis_ws", args.app]
-    return tools.run(cmd, env=tools.xilinx_env(xsdb))
+    # stdin not a terminal: Xilinx's xsdb launcher then skips its bundled rlwrap (line editing
+    # we don't need for a script), which warns about $TERM on distros whose terminfo it can't read.
+    return tools.run(cmd, env=tools.xilinx_env(xsdb), stdin=subprocess.DEVNULL)
 
 
 # --- Basys3 ---------------------------------------------------------------------
@@ -243,14 +250,14 @@ def main(argv=None):
     p.add_argument("testbench", nargs="?", default="zybo_gpio_tb")
     p.set_defaults(fn=cmd_zybo_wave)
 
-    boards = ("z7-20", "z7-10")
+    boards = ("zybo", "z7-10", "z7-20")   # the original Zybo, Zybo Z7-10, Zybo Z7-20
     p = zybo.add_parser("xsa", help="Vivado: block design, bitstream and .xsa for the real board")
-    p.add_argument("--board", choices=boards, default="z7-20")
+    p.add_argument("--board", choices=boards, default="zybo")
     p.add_argument("--bd-only", action="store_true", help="stop after the block design (quick check)")
     p.set_defaults(fn=cmd_zybo_xsa)
     p = zybo.add_parser("vitis", help="Vitis: platform + apps from the .xsa (same source as the emulation)")
     p.add_argument("apps", nargs="*", help="default: xgpio_blink xgpio_btns")
-    p.add_argument("--board", choices=boards, default="z7-20")
+    p.add_argument("--board", choices=boards, default="zybo")
     p.set_defaults(fn=cmd_zybo_vitis)
     p = zybo.add_parser("jtag", help="load the bitstream and an app onto a connected Zybo over JTAG")
     p.add_argument("app", nargs="?", default="xgpio_blink")

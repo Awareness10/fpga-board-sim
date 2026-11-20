@@ -5,31 +5,41 @@
 #       GPIO2 (channel 2) = btns_4bits
 # The board interfaces carry the pin constraints, so no .xdc is needed.
 #
+# Boards: zybo (the original Zybo, XC7Z010, 512 MB DDR3; default), z7-10, z7-20 (Zybo Z7).
+#
 # Easiest: `uv run boardsim zybo xsa [--board z7-10] [--bd-only]`. Directly:
-#   vivado -mode batch -source zybo/vivado/zybo_gpio.tcl -tclargs <out dir> [z7-20|z7-10] [bd]
+#   vivado -mode batch -source zybo/vivado/zybo_gpio.tcl -tclargs <out dir> [zybo|z7-10|z7-20] [bd]
 #     "bd": stop after the block design (quick check, no synthesis)
-# Output: <out dir>/zybo_<board>/      (project; open the .xpr in the GUI to look around)
-#         <out dir>/zybo_<board>.xsa   (for Vitis, bitstream included)
+# Output: <out dir>/<name>/      (project; open the .xpr in the GUI to look around)
+#         <out dir>/<name>.xsa   (for Vitis, bitstream included)
+#   name = zybo for the original Zybo, zybo_z7-10 / zybo_z7-20 for the Zybo Z7.
 
-if {[llength $argv] < 1} { error "usage: -tclargs <out dir> \[z7-20|z7-10\] \[bd\]" }
+if {[llength $argv] < 1} { error "usage: -tclargs <out dir> \[zybo|z7-10|z7-20\] \[bd\]" }
 set out   [file normalize [lindex $argv 0]]
-set board [expr {[llength $argv] > 1 ? [lindex $argv 1] : "z7-20"}]
+set board [expr {[llength $argv] > 1 ? [lindex $argv 1] : "zybo"}]
 set stop  [expr {[llength $argv] > 2 ? [lindex $argv 2] : "all"}]
 set gpio2 btns_4bits
 
+# The Zybo Z7 board files ship with Vivado 2023.2; the original Zybo's don't, so a copy of
+# Digilent's (github.com/Digilent/vivado-boards, MIT) is kept in board_files/ next to this script.
+set_param board.repoPaths [list [file normalize [file join [file dirname [info script]] board_files]]]
+
 switch $board {
-    z7-10 { set part xc7z010clg400-1 }
-    z7-20 { set part xc7z020clg400-1 }
-    default { error "board must be z7-10 or z7-20, got '$board'" }
+    zybo  { set part xc7z010clg400-1; set bpname zybo;      set name zybo }
+    z7-10 { set part xc7z010clg400-1; set bpname zybo-z7-10; set name zybo_z7-10 }
+    z7-20 { set part xc7z020clg400-1; set bpname zybo-z7-20; set name zybo_z7-20 }
+    default { error "board must be zybo, z7-10 or z7-20, got '$board'" }
 }
 
-set name   zybo_${board}
 set outdir $out/$name
 
-# --- 1. Project for the Zybo board (Digilent board files ship with Vivado 2023.2) ---
+# --- 1. Project for the Zybo board ---
 create_project $name $outdir -part $part -force
-set bp [lindex [lsort [get_board_parts "digilentinc.com:zybo-$board:*"]] end]
-if {$bp eq ""} { error "No Digilent board files for zybo-$board. Install them from github.com/Digilent/vivado-boards" }
+# VHDL like the rest of the repo (Vivado's default is Verilog): the block design's top and
+# the HDL wrapper come out as .vhd. Xilinx IP keeps its own sources (the PS7 is Verilog-only).
+set_property target_language VHDL [current_project]
+set bp [lindex [lsort [get_board_parts "digilentinc.com:${bpname}:*"]] end]
+if {$bp eq ""} { error "No Digilent board files for $bpname. Install them from github.com/Digilent/vivado-boards" }
 set_property board_part $bp [current_project]
 puts "INFO: board part $bp"
 

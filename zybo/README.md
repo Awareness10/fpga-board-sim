@@ -1,6 +1,6 @@
-# Zybo Z7 (Zynq-7000)
+# Zybo / Zybo Z7 (Zynq-7000)
 
-The Zybo Z7's Zynq-7000 chip has two halves, and each one is handled differently here:
+The Zybo's Zynq-7000 chip has two halves, and each one is handled differently here:
 
 | Half | What it is | Here, without a board | Folder |
 |---|---|---|---|
@@ -55,7 +55,7 @@ AXI GPIO registers (Xilinx PG144): `0x0` GPIO_DATA, `0x4` GPIO_TRI, `0x8` GPIO2_
 - **PS-SRST** restarts the program, like the button on the board.
 
 QEMU runs with `-icount shift=1,align=on`: 2 ns per instruction, kept in step with the
-wall clock, which is close to the Zybo's 667 MHz Cortex-A9. That's why `xgpio_blink`
+wall clock, which is close to the Zybo's 650 MHz Cortex-A9. That's why `xgpio_blink`
 blinks at a visible rate (about 3 Hz) instead of flickering. The tests don't use this
 and run as fast as your computer allows.
 
@@ -109,13 +109,18 @@ master). Port names follow Vivado's `s_axi_*` convention, so Vivado recognises t
 interface when you add the file to a block design with *Add Module*. To use it on the
 board: add it next to the Zynq PS, run connection automation (it lands at `0x43C0_0000`),
 make `led`, `sw`, `btn` external, uncomment those pins in a copy of
-`pl/constraints/Zybo-Z7-Master.xdc`, and build `axi_leds` with `-DAXI_LEDS_REAL=1`.
+`pl/constraints/Zybo-Master.xdc` (original Zybo) or `Zybo-Z7-Master.xdc`, and build `axi_leds` with `-DAXI_LEDS_REAL=1`.
 
 ## On the real board
 
 `vivado/zybo_gpio.tcl` (run by `boardsim zybo xsa`) does what you would click in the GUI:
 
-1. New project, *Boards* tab → *Zybo Z7-20* (Digilent's board files ship with Vivado 2023.2).
+1. New project, *Boards* tab → *Zybo* (or *Zybo Z7-10* / *Z7-20*). Vivado 2023.2 ships the
+   Zybo Z7 board files but not the original Zybo's; the script loads Digilent's copy from
+   `vivado/board_files/` (in the GUI: *Settings → Board Repository*, or install them from
+   github.com/Digilent/vivado-boards).
+   Set *Target language* to VHDL (in the wizard, or *Settings → General* later) so the
+   wrapper is VHDL like the rest of the repo; Vivado defaults to Verilog.
 2. *Create Block Design* → add *ZYNQ7 Processing System* → *Run Block Automation* (board preset on).
 3. Add *AXI GPIO* → *Re-customize*: GPIO = `leds_4bits`, *Enable Dual Channel*, GPIO2 =
    `btns_4bits` → *Run Connection Automation* (all). No XDC needed: the board interfaces
@@ -134,7 +139,7 @@ program with `ps/examples/<app>/xgpio_example.c` imported unchanged.
 
 `vitis/run_jtag.tcl` (run by `boardsim zybo jtag`) does what Vitis *Run* does: reset,
 program the PL with the bitstream, `ps7_init` + `ps7_post_config`, download the `.elf`,
-run. Set jumper JP5 to JTAG, connect USB to the PROG/UART port (J12), power on. The serial
+run. Set jumper JP5 to JTAG, connect USB to the PROG/UART port (J11 on the Zybo, J12 on the Zybo Z7), power on. The serial
 console is the board's second USB serial port at 115200 8N1 (Windows: a COM port; Linux:
 usually `/dev/ttyUSB1`).
 
