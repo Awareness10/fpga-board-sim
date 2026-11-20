@@ -131,14 +131,21 @@ basys3/              VHDL designs, testbenches, constraints, Vivado script
 
 ## Status
 
-- **Linux** (Arch-based, Vivado/Vitis 2023.2): everything except the real boards: all
-  tests, both board views, the Basys3 bitstream, the Zybo `.xsa` and Vitis builds.
+- **Linux** (Arch-based, Vivado/Vitis 2023.2): all tests, both board views, the Basys3
+  bitstream, and the full Zybo flow on a real (original) Zybo: `.xsa`, Vitis builds and
+  `zybo jtag`, with `xgpio_blink` and `xgpio_btns` running on the board.
 - **Windows and macOS:** `boardsim test` passes in CI (`.github/workflows/test.yml`):
   the Conan toolchain download, the ARM builds, QEMU and GHDL. The board views and the
   Vivado/Vitis commands haven't been tried there by a person yet.
-- **Not yet tested:** `zybo jtag` and `basys3 program` on real boards.
+- **Not yet tested:** `basys3 program` on a real board, and the Zybo Z7 (`--board z7-10`,
+  `z7-20`) on real hardware.
 
 Reports and fixes are welcome.
+
+## References
+
+- [Zybo reference manual](https://digilent.com/reference/programmable-logic/zybo/reference-manual) (Digilent)
+- [Basys 3 reference manual](https://digilent.com/reference/programmable-logic/basys-3/reference-manual) (Digilent)
 
 ## AI disclosure
 
