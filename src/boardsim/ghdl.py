@@ -97,9 +97,9 @@ def vhdl_file(folder, stem):
 
 
 class Design:
-    def __init__(self, root, extra_sim=(), stop_time="10ms"):
+    def __init__(self, root, extra_sim=(), stop_time="10ms", build=None):
         self.root = Path(root).resolve()
-        self.build = self.root / "build"
+        self.build = Path(build).resolve() if build else self.root / "build"
         self.work = self.build / "ghdl"
         self.extra_sim = [Path(p).resolve() for p in extra_sim]
         self.stop_time = stop_time
