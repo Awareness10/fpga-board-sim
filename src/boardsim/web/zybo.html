@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Zybo Z7 Board View</title>
+<title>Zybo Board View</title>
 <style>
 :root {
   --bg: #0d1014;
@@ -127,7 +127,7 @@ canvas#spark { width: 100%; height: 56px; display: block; margin-top: 8px; }
 </head>
 <body>
 <header>
-  <h1>Zybo Z7 · board view</h1>
+  <h1>Zybo · board view</h1>
   <span class="chip" id="prog">program <b>…</b></span>
   <span class="chip" id="cfg">GPIO2 <b>…</b></span>
   <span class="chip" id="run"><span class="status-dot"></span><span id="runtxt">connecting…</span></span>
@@ -140,7 +140,7 @@ canvas#spark { width: 100%; height: 56px; display: block; margin-top: 8px; }
 <main>
   <section>
     <div class="board-wrap">
-      <svg id="board" viewBox="0 0 1100 700" role="img" aria-label="Zybo Z7 board model">
+      <svg id="board" viewBox="0 0 1100 750" role="img" aria-label="Zybo board model">
         <defs>
           <radialGradient id="ledHalo">
             <stop offset="0" stop-color="#7dffa6" stop-opacity=".9"/>
@@ -169,31 +169,36 @@ canvas#spark { width: 100%; height: 56px; display: block; margin-top: 8px; }
         </defs>
 
         <!-- PCB -->
-        <rect x="20" y="20" width="1060" height="660" rx="26" fill="var(--pcb)" stroke="var(--pcb-edge)" stroke-width="2"/>
-        <rect x="20" y="20" width="1060" height="660" rx="26" fill="url(#pcbGrid)" opacity=".55"/>
+        <rect x="20" y="20" width="1060" height="700" rx="26" fill="var(--pcb)" stroke="var(--pcb-edge)" stroke-width="2"/>
+        <rect x="20" y="20" width="1060" height="700" rx="26" fill="url(#pcbGrid)" opacity=".55"/>
         <g fill="none" stroke="#b08d57" stroke-width="3">
           <circle cx="52" cy="52" r="10"/><circle cx="1048" cy="52" r="10"/>
-          <circle cx="52" cy="648" r="10"/><circle cx="1048" cy="648" r="10"/>
+          <circle cx="52" cy="688" r="10"/><circle cx="1048" cy="688" r="10"/>
         </g>
 
-        <!-- Not modelled: top-edge connectors, Pmods, audio (dimmed, for orientation) -->
+        <!-- Not modelled (dimmed, for orientation). Placed as on the original Zybo (reference
+             manual photo): Ethernet, HDMI and VGA along the top, audio jacks on the right
+             edge, USB OTG bottom left, Pmods around the edges. -->
         <g opacity=".5">
-          <rect x="120" y="22" width="78" height="34" rx="4" fill="url(#metal)"/>
-          <text x="159" y="72" text-anchor="middle" class="dimtext">HDMI RX</text>
-          <rect x="226" y="22" width="78" height="34" rx="4" fill="url(#metal)"/>
-          <text x="265" y="72" text-anchor="middle" class="dimtext">HDMI TX</text>
-          <rect x="336" y="22" width="70" height="52" rx="4" fill="url(#metal)"/>
-          <text x="371" y="90" text-anchor="middle" class="dimtext">Ethernet</text>
-          <rect x="436" y="22" width="46" height="38" rx="4" fill="url(#metal)"/>
-          <text x="459" y="76" text-anchor="middle" class="dimtext">USB host</text>
+          <rect x="112" y="22" width="70" height="52" rx="4" fill="url(#metal)"/>
+          <text x="147" y="90" text-anchor="middle" class="dimtext">Ethernet · J3</text>
+          <rect x="230" y="22" width="78" height="34" rx="4" fill="url(#metal)"/>
+          <text x="269" y="72" text-anchor="middle" class="dimtext">HDMI I/O · J8</text>
+          <path d="M836 22 H964 L952 62 H848 Z" fill="url(#metal)"/>
+          <path d="M852 30 H948 L940 54 H860 Z" fill="#1f2328"/>
+          <text x="900" y="78" text-anchor="middle" class="dimtext">VGA · J2</text>
           <g fill="#2a2f36" stroke="#5b636d" stroke-width="3">
-            <circle cx="560" cy="44" r="13"/><circle cx="604" cy="44" r="13"/><circle cx="648" cy="44" r="13"/>
+            <circle cx="1058" cy="200" r="13"/><circle cx="1058" cy="250" r="13"/><circle cx="1058" cy="300" r="13"/>
           </g>
-          <text x="604" y="76" text-anchor="middle" class="dimtext">audio</text>
+          <text x="1036" y="204" text-anchor="end" class="dimtext">HPH OUT</text>
+          <text x="1036" y="254" text-anchor="end" class="dimtext">MIC IN</text>
+          <text x="1036" y="304" text-anchor="end" class="dimtext">LINE IN</text>
+          <rect x="14" y="586" width="44" height="40" rx="4" fill="url(#metal)"/>
+          <rect x="22" y="596" width="28" height="20" rx="2" fill="#1f2328"/>
+          <text x="22" y="642" class="dimtext">USB OTG</text>
           <g id="pmods"></g>
-          <text x="1040" y="420" text-anchor="middle" class="dimtext">Pmod JA–JE</text>
         </g>
-        <text x="760" y="40" class="dimtext">dimmed parts are not modelled</text>
+        <text x="470" y="40" class="dimtext">dimmed parts are not modelled</text>
 
         <!-- Power -->
         <rect x="20" y="96" width="38" height="34" rx="4" fill="#23272e" stroke="#4b5563"/>
@@ -208,7 +213,7 @@ canvas#spark { width: 100%; height: 56px; display: block; margin-top: 8px; }
         <g id="ddrbus" stroke="var(--copper)" stroke-width="2"></g>
         <rect x="170" y="215" width="118" height="86" rx="6" fill="url(#chipGrad)" stroke="#3a414c"/>
         <text x="229" y="252" text-anchor="middle" class="silk" font-size="13" font-weight="600">DDR3</text>
-        <text x="229" y="270" text-anchor="middle" class="silk-m" font-size="11" opacity=".7">1 GB</text>
+        <text x="229" y="270" text-anchor="middle" class="silk-m" font-size="11" opacity=".7">512 MB</text>
 
         <!-- USB-UART: the program's console -->
         <path d="M350 420 H210 V400 H62" class="trace" id="uartTrace"/>
@@ -216,13 +221,13 @@ canvas#spark { width: 100%; height: 56px; display: block; margin-top: 8px; }
         <rect x="26" y="394" width="30" height="12" rx="3" fill="#1f2328"/>
         <circle cx="86" cy="378" r="4.5" class="txled" id="txled"/>
         <text x="96" y="382" class="dimtext">TX</text>
-        <text x="22" y="436" class="silk" font-size="12" font-weight="600">UART · J12</text>
+        <text x="22" y="436" class="silk" font-size="12" font-weight="600">UART · J11</text>
         <text x="22" y="452" class="dimtext">USB-UART → console (right)</text>
         <text x="215" y="442" class="dimtext">UART1 · MIO 48/49</text>
 
         <!-- Zynq package with an x-ray view of PS and PL -->
         <rect x="330" y="190" width="410" height="290" rx="12" fill="url(#chipGrad)" stroke="#444c58" stroke-width="2"/>
-        <text x="345" y="212" class="silk" font-size="13" font-weight="700" letter-spacing="1">ZYNQ-7000 · XC7Z020</text>
+        <text x="345" y="212" class="silk" font-size="13" font-weight="700" letter-spacing="1">ZYNQ-7000 · XC7Z010</text>
         <text x="726" y="212" text-anchor="end" class="dimtext">x-ray view</text>
 
         <rect x="350" y="232" width="150" height="226" rx="10" fill="rgba(59,130,246,.10)" stroke="var(--ps)" stroke-width="1.5"/>
@@ -270,7 +275,7 @@ canvas#spark { width: 100%; height: 56px; display: block; margin-top: 8px; }
           <text x="116" y="667" text-anchor="middle" class="dimtext">restart program</text>
         </g>
 
-        <text x="190" y="610" class="silk" font-size="18" font-weight="700" letter-spacing="1.5">ZYBO Z7</text>
+        <text x="190" y="610" class="silk" font-size="18" font-weight="700" letter-spacing="1.5">ZYBO</text>
         <text x="190" y="628" class="dimtext">board model · QEMU + zybo_board.c</text>
       </svg>
     </div>
@@ -304,7 +309,7 @@ canvas#spark { width: 100%; height: 56px; display: block; margin-top: 8px; }
     </div>
 
     <div class="card">
-      <h2>UART console <span>J12 · 115200</span></h2>
+      <h2>UART console <span>J11 · 115200</span></h2>
       <div class="console" id="console"><span class="empty">The program's xil_printf output appears here.</span></div>
     </div>
 
@@ -343,12 +348,30 @@ const PIN_Y2 = 410;
 // ---- Static decoration generated in code ----
 (function decorate() {
   const pm = $("pmods");
-  for (let j = 0; j < 5; j++) {
-    const y = 100 + j * 60;
-    el("rect", { x: 1026, y, width: 40, height: 46, rx: 3, fill: "#20252c", stroke: "#4b5563" }, pm);
-    for (let r = 0; r < 6; r++) for (let c = 0; c < 2; c++)
-      el("circle", { cx: 1038 + c * 16, cy: y + 7 + r * 6.4, r: 2, fill: "#b08d57" }, pm);
-  }
+  // Pmods where the original Zybo has them (reference manual photo): JE, JD, JC, JB along the
+  // bottom edge, JA (XADC) on the right edge, JF (MIO) on the left. The 2x6 housings hang
+  // over the PCB edge, as on the real board.
+  const pins = (x0, y0, dx, dy, cols, rows, attrs) => {
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++)
+      el("circle", { cx: x0 + c * dx, cy: y0 + r * dy, r: 2.2, fill: "#b08d57", ...attrs }, pm);
+  };
+  const bottom = (name, kind, cx) => {
+    pins(cx - 40, 692, 16, 9, 6, 2, {});
+    el("rect", { x: cx - 48, y: 708, width: 96, height: 30, rx: 3, fill: "#2a2f36", stroke: "#6b7280" }, pm);
+    txt("text", { x: cx, y: 727, "text-anchor": "middle", class: "dimtext", style: "fill:#e5e7eb" }, `${name} · ${kind}`, pm);
+  };
+  bottom("JE", "std", 500);
+  bottom("JD", "high-speed", 625);
+  bottom("JC", "high-speed", 810);
+  bottom("JB", "high-speed", 930);
+  const side = (name, kind, x, pinX, y, rot) => {
+    el("rect", { x, y, width: 30, height: 96, rx: 3, fill: "#2a2f36", stroke: "#6b7280" }, pm);
+    pins(pinX, y + 8, 9, 16, 2, 6, {});
+    txt("text", { x: x + 15, y: y + 48, "text-anchor": "middle", class: "dimtext", style: "fill:#e5e7eb",
+                  transform: `rotate(${rot} ${x + 15} ${y + 48})`, dy: 4 }, `${name} · ${kind}`, pm);
+  };
+  side("JA", "XADC", 1066, 1046, 556, 90);
+  side("JF", "MIO", 4, 42, 470, -90);
   const ddr = $("ddrbus");
   for (let i = 0; i < 5; i++) el("line", { x1: 288, y1: 232 + i * 13, x2: 350, y2: 268 + i * 12 }, ddr);
   const cpus = $("cpus");
