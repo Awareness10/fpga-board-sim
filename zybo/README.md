@@ -81,7 +81,11 @@ depends on timing or clock setup may not.
 
 ## Your own programs
 
-Add a program in `ps/CMakeLists.txt`:
+For an assignment, use `uv run boardsim new zybo <name>` (your own peripheral + C) or
+`new zybo <name> --gpio` (C on the tutorial's AXI GPIO): it makes a self-contained folder
+in `assignments/` that every command accepts by name. See [HOW-TO-USE.md](../HOW-TO-USE.md).
+
+To add a program to the examples here instead, list it in `ps/CMakeLists.txt`:
 
 ```cmake
 zynq_program(myprog examples/myprog/main.c)                 # plain bare-metal program
@@ -110,10 +114,13 @@ interface when you add the file to a block design with *Add Module*. To use it o
 board: add it next to the Zynq PS, run connection automation (it lands at `0x43C0_0000`),
 make `led`, `sw`, `btn` external, uncomment those pins in a copy of
 `pl/constraints/Zybo-Master.xdc`, and build `axi_leds` with `-DAXI_LEDS_REAL=1`.
+`boardsim new zybo <name>` starts an assignment from a copy of this peripheral, and
+`boardsim zybo xsa <name>` does these Vivado steps for you.
 
 ## On the real board
 
-`vivado/zybo_gpio.tcl` (run by `boardsim zybo xsa`) does what you would click in the GUI:
+`vivado/zybo_design.tcl` (run by `boardsim zybo xsa`) does what you would click in the GUI
+(for an assignment with its own peripheral, step 3 adds that instead of the AXI GPIO):
 
 1. New project, *Boards* tab → *Zybo*. Vivado 2023.2 doesn't ship the original Zybo's
    board files; the script loads Digilent's copy from

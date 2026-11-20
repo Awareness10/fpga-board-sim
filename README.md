@@ -15,6 +15,10 @@ Made for USN's course [CS4110-1 26H Hardware/Software Co-Design of Embedded Syst
 ![Zybo board view](docs/zybo-board-view.png)
 ![Basys3 board view](docs/basys3-board-view.png)
 
+**Doing an assignment?** `uv run boardsim new zybo lab1` (or `new basys3 lab1`) gives you
+a working starting point in `assignments/lab1/`; [HOW-TO-USE.md](HOW-TO-USE.md) walks
+through the whole workflow, from the first testbench to the real board.
+
 Everything is driven by one command-line tool, `boardsim`, written in Python and managed
 with [uv](https://docs.astral.sh/uv/). The ARM cross-compiler, CMake and Ninja are
 downloaded by [Conan](https://conan.io) on the first build. Windows, macOS and Linux all
@@ -45,6 +49,8 @@ uv run boardsim doctor     # what's found, and how to install what isn't
 uv run boardsim setup      # Conan: default profile + the Arm toolchain recipe
 uv run boardsim test       # every GHDL testbench and every ARM program in QEMU
 ```
+
+Then start your first assignment: [HOW-TO-USE.md](HOW-TO-USE.md).
 
 **Windows:** if `uv sync` / `uv run` fails with a "blocked" or permission error, Windows
 is stopping the Python build uv downloads (Smart App Control or a company policy).
@@ -110,16 +116,18 @@ uv run boardsim basys3 program          # Vivado: bitstream + program a connecte
 ```
 
 `basys3_top` is a counter on the LEDs and the 7-segment display (`btnC` = reset,
-`sw(0)` = pause). Point any of the commands at **your own design** with
-`--dir <folder> --top <entity>`; the folder needs `src/*.vhdl`, plus `tb/*_tb.vhdl` for
-tests and `constraints/<top>.xdc` for Vivado. Name the ports as in Digilent's master XDC
+`sw(0)` = pause). For **your own design**, `uv run boardsim new basys3 lab1` and then
+`basys3 run lab1` etc. (see [HOW-TO-USE.md](HOW-TO-USE.md)); any other folder with
+`src/*.vhdl` (+ `tb/*_tb.vhdl`, `constraints/<top>.xdc`) works too: `basys3 run <folder> --top <entity>`. Name the ports as in Digilent's master XDC
 (`clk`, `sw`, `btnC`/`U`/`L`/`R`/`D`, `led`, `seg`, `dp`, `an`). How the board view
 simulates your design, and how to make it fast: [basys3/README.md](basys3/README.md).
 
 ## Layout
 
 ```
-src/boardsim/        the tool: CLI, QEMU and GHDL runners, board view servers, web/ pages
+assignments/         your work: one folder per assignment (boardsim new ...)
+src/boardsim/        the tool: CLI, QEMU and GHDL runners, board view servers, web/ pages,
+                     templates/ for boardsim new
 conan/               Arm GNU toolchain recipe and Cortex-A9 bare-metal profiles
 zybo/ps/             ARM side: BSP, Xilinx driver stand-ins (xil/), board model, examples
 zybo/pl/             FPGA side: AXI GPIO + custom AXI-Lite peripheral, testbenches

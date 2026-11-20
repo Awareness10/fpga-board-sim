@@ -43,4 +43,9 @@ jobs:
           key: conan-${{ runner.os }}-${{ hashFiles('conan/**') }}
 
       - run: uv run boardsim doctor
+
+      - name: One assignment of each kind from the templates (boardsim test includes them)
+        # one line with &&: on Windows (pwsh) a failure in an earlier line of a block isn't fatal
+        run: uv run boardsim new zybo ci_ip && uv run boardsim new zybo ci_gpio --gpio && uv run boardsim new basys3 ci_basys3
+
       - run: uv run boardsim test

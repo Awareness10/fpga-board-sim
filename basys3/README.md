@@ -18,8 +18,13 @@ uv run boardsim basys3 program          # Vivado: bitstream + program a connecte
 
 ## Your own design
 
-Every command takes `--dir <folder>` (default: this folder) and the board commands take
-`--top <entity>` (default: `basys3_top`):
+```sh
+uv run boardsim new basys3 lab1     # assignments/lab1: top entity, testbench, pins
+uv run boardsim basys3 run lab1     # and test / wave lab1_tb / bit / program
+```
+
+Every command takes an assignment name or a folder (default: this folder); the top entity
+is the one named like the folder, else `basys3_top`, or pass `--top <entity>`:
 
 ```
 my_design/
@@ -28,11 +33,8 @@ my_design/
   constraints/<top>.xdc  pins (for bit / program): copy lines from Basys-3-Master.xdc
 ```
 
-```sh
-uv run boardsim basys3 run --dir path/to/my_design --top my_top
-```
-
 Testbenches in your folder can use `basys3_sim_pkg` from this folder's `sim/`.
+The whole workflow: [HOW-TO-USE.md](../HOW-TO-USE.md).
 
 ## How the board view works
 
