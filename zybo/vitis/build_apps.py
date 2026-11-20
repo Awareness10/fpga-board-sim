@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # The Peronnin tutorial's Vitis part (Unified IDE 2023.2), as a script:
 #   platform component from the .xsa (standalone, ps7_cortexa9_0)  ->  app components
-#   with the same xgpio_example.c files the emulation runs (zybo/ps/examples/xgpio_*).
+#   with the same source files the emulation runs.
 #
-# Easiest: `uv run boardsim zybo vitis`, after `boardsim zybo xsa`. Directly:
-#   vitis -s zybo/vitis/build_apps.py <xsa> <workspace dir> [app ...]
+# Easiest: `uv run boardsim zybo vitis [assignment]`, after `boardsim zybo xsa`. Directly:
+#   vitis -s zybo/vitis/build_apps.py <xsa> <workspace dir> [app | app=<source dir> ...]
+#   app            one of zybo/ps/examples/ (default: xgpio_blink xgpio_btns)
+#   app=<dir>      every .c/.h/.S file in <dir>, e.g. lab1=assignments/lab1/ps
 # Output: <workspace dir>/  (open this folder as the workspace in the Vitis IDE)
 #         <workspace dir>/<app>/build/<app>.elf
 import os
@@ -36,13 +38,16 @@ try:
     platform.build()
     xpfm = client.get_platform(plat_name)
 
-    for app in apps:
+    for spec in apps:
+        app, _, src = spec.partition("=")
+        src = os.path.abspath(src) if src else os.path.join(examples, app)
+        files = sorted(f for f in os.listdir(src) if os.path.splitext(f)[1] in (".c", ".h", ".S", ".s"))
+        if not files:
+            raise SystemExit(f"no .c/.h/.S files in {src}")
         comp = client.create_app_component(
             name=app, platform=xpfm, domain="standalone_ps7_cortexa9_0",
             template="empty_application")
-        comp.import_files(
-            from_loc=os.path.join(examples, app),
-            files=["xgpio_example.c"], dest_dir_in_cmp="src")
+        comp.import_files(from_loc=src, files=files, dest_dir_in_cmp="src")
         comp.build()
         elf = os.path.join(ws, app, "build", app + ".elf")
         results.append((app, os.path.isfile(elf)))

@@ -1,24 +1,34 @@
-# The Peronnin tutorial's Vivado part (block design -> bitstream -> .xsa), as a script.
-# It does what the GUI steps do:
+# The Zybo's block design -> bitstream -> .xsa, as a script. It does what the GUI steps do.
+#
+# Without a peripheral: the Peronnin tutorial's design
 #   ZYNQ7 PS (board preset) --M_AXI_GP0--> axi_gpio_0
 #       GPIO  (channel 1) = leds_4bits
 #       GPIO2 (channel 2) = btns_4bits
-# The board interfaces carry the pin constraints, so no .xdc is needed.
+#   The board interfaces carry the pin constraints, so no .xdc is needed.
+#
+# With a peripheral (an assignment made by `boardsim new zybo`): your VHDL instead of the GPIO
+#   ZYNQ7 PS (board preset) --M_AXI_GP0--> <top>_0   (GUI: Add Module, then Connection Automation)
+#   Every port of <top> that isn't part of the AXI interface (or its clock and reset) becomes a
+#   top-level port with the same name, with its pins from the .xdc.
 #
 # Boards: zybo (the original Zybo, XC7Z010, 512 MB DDR3: the course's board, default).
 #         z7-10, z7-20 (Zybo Z7): outside the course, kept because they cost two lines.
 #
-# Easiest: `uv run boardsim zybo xsa [--bd-only]`. Directly:
-#   vivado -mode batch -source zybo/vivado/zybo_gpio.tcl -tclargs <out dir> [zybo|z7-10|z7-20] [bd]
+# Easiest: `uv run boardsim zybo xsa [assignment] [--bd-only]`. Directly:
+#   vivado -mode batch -source zybo/vivado/zybo_design.tcl \
+#          -tclargs <out dir> [zybo|z7-10|z7-20] [all|bd] [<vhdl dir> <top entity> <xdc>]
 #     "bd": stop after the block design (quick check, no synthesis)
 # Output: <out dir>/<name>/      (project; open the .xpr in the GUI to look around)
 #         <out dir>/<name>.xsa   (for Vitis, bitstream included)
 #   name = zybo for the original Zybo, zybo_z7-10 / zybo_z7-20 for the Zybo Z7.
 
-if {[llength $argv] < 1} { error "usage: -tclargs <out dir> \[zybo|z7-10|z7-20\] \[bd\]" }
+if {[llength $argv] < 1} { error "usage: -tclargs <out dir> \[zybo|z7-10|z7-20\] \[all|bd\] \[<vhdl dir> <top> <xdc>\]" }
 set out   [file normalize [lindex $argv 0]]
 set board [expr {[llength $argv] > 1 ? [lindex $argv 1] : "zybo"}]
 set stop  [expr {[llength $argv] > 2 ? [lindex $argv 2] : "all"}]
+set ipdir [expr {[llength $argv] > 5 ? [file normalize [lindex $argv 3]] : ""}]
+set top   [expr {[llength $argv] > 5 ? [lindex $argv 4] : ""}]
+set xdc   [expr {[llength $argv] > 5 ? [file normalize [lindex $argv 5]] : ""}]
 set gpio2 btns_4bits
 
 # The Zybo Z7 board files ship with Vivado 2023.2; the original Zybo's don't, so a copy of
@@ -51,6 +61,7 @@ apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 \
     -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable"} \
     [get_bd_cells processing_system7_0]
 
+if {$ipdir eq ""} {
 # --- 3. AXI GPIO on the board interfaces (GUI: Board tab, or "Run Connection Automation") ---
 create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio axi_gpio_0
 set_property -dict [list CONFIG.GPIO_BOARD_INTERFACE leds_4bits \
@@ -62,11 +73,55 @@ apply_bd_automation -rule xilinx.com:bd_rule:board -config [list Board_Interface
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
     -config {Master "/processing_system7_0/M_AXI_GP0" Clk_master "Auto" Clk_slave "Auto" Clk_xbar "Auto" intc_ip "New AXI Interconnect" master_apm "0"} \
     [get_bd_intf_pins axi_gpio_0/S_AXI]
+} else {
+# --- 3. Your peripheral (GUI: Add Sources, right-click the block design -> Add Module) ---
+set srcs [lsort [glob -nocomplain -directory $ipdir *.vhdl *.vhd]]
+if {$srcs eq ""} { error "no .vhdl files in $ipdir" }
+add_files -norecurse $srcs
+if {$xdc ne ""} {
+    if {![file exists $xdc]} { error "missing $xdc (the pins of $top's board I/O)" }
+    add_files -fileset constrs_1 -norecurse $xdc
+}
+update_compile_order -fileset sources_1
+set cell ${top}_0
+create_bd_cell -type module -reference $top $cell
+# Vivado infers the AXI-Lite interface from the s_axi_* port names
+set axi [get_bd_intf_pins -of_objects [get_bd_cells $cell] -filter {VLNV =~ "*aximm*"}]
+if {$axi eq ""} { error "$top has no AXI interface: name its ports s_axi_aclk, s_axi_aresetn, s_axi_awaddr, ..." }
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
+    -config {Master "/processing_system7_0/M_AXI_GP0" Clk_master "Auto" Clk_slave "Auto" Clk_xbar "Auto" intc_ip "New AXI Interconnect" master_apm "0"} \
+    $axi
+# Same address as the GUI's usual first AXI-Lite peripheral, and the C header's <NAME>_BASE
+# (the scripted automation picks 0x4000_0000 instead)
+set seg [get_bd_addr_segs -of_objects [get_bd_addr_spaces processing_system7_0/Data] -filter "NAME =~ *${cell}*"]
+set_property offset 0x43C00000 $seg
+set_property range 64K $seg
+# Board I/O: every pin that isn't in an interface (s_axi) or already connected (its clock
+# and reset) becomes a top-level port with the same name
+set in_intf {}
+foreach ip [get_bd_intf_pins -of_objects [get_bd_cells $cell]] {
+    foreach p [get_bd_pins -quiet -of_objects $ip] { lappend in_intf [get_property NAME $p] }
+}
+foreach pin [get_bd_pins -of_objects [get_bd_cells $cell]] {
+    if {[lsearch -exact $in_intf [get_property NAME $pin]] >= 0} { continue }
+    if {[llength [get_bd_nets -quiet -of_objects $pin]]} { continue }
+    set pname [get_property NAME $pin]
+    set left  [get_property LEFT $pin]
+    if {$left ne ""} {
+        create_bd_port -dir [get_property DIR $pin] -from $left -to [get_property RIGHT $pin] $pname
+    } else {
+        create_bd_port -dir [get_property DIR $pin] $pname
+    }
+    connect_bd_net [get_bd_ports $pname] $pin
+    puts "INFO: port $pname ([get_property DIR $pin])"
+}
+}
 
 validate_bd_design
 save_bd_design
 
-# --- What the emulation assumes: check it here instead of by eye ---
+# --- What the C code assumes: check it here instead of by eye ---
+if {$ipdir eq ""} {
 set seg [get_bd_addr_segs -of_objects [get_bd_addr_spaces processing_system7_0/Data] -filter {NAME =~ *axi_gpio_0*}]
 set base [format 0x%08X [get_property OFFSET $seg]]
 set range [format 0x%X [get_property RANGE $seg]]
@@ -75,9 +130,14 @@ puts "CHECK: axi_gpio_0 base $base range $range (zybo/ps/xil/xparameters.h expec
 foreach p {C_GPIO_WIDTH C_ALL_OUTPUTS C_IS_DUAL C_GPIO2_WIDTH C_ALL_INPUTS_2 C_INTERRUPT_PRESENT GPIO_BOARD_INTERFACE GPIO2_BOARD_INTERFACE} {
     puts "CHECK: $p = [get_property CONFIG.$p $cfg]"
 }
+if {$base ne "0x41200000"} { puts "WARNING: address differs from the emulation; update zybo/ps/xil/xparameters.h" }
+} else {
+set seg [get_bd_addr_segs -of_objects [get_bd_addr_spaces processing_system7_0/Data] -filter "NAME =~ *${cell}*"]
+set base [format 0x%08X [get_property OFFSET $seg]]
+puts "CHECK: $cell base $base range [format 0x%X [get_property RANGE $seg]] (the C header's base address must match)"
+}
 puts "CHECK: FCLK_CLK0 = [get_property CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ [get_bd_cells processing_system7_0]] MHz"
 puts "CHECK: UART1 = [get_property CONFIG.PCW_UART1_PERIPHERAL_ENABLE [get_bd_cells processing_system7_0]]"
-if {$base ne "0x41200000"} { puts "WARNING: address differs from the emulation; update zybo/ps/xil/xparameters.h" }
 
 if {$stop eq "bd"} { puts "INFO: stopping after the block design"; return }
 

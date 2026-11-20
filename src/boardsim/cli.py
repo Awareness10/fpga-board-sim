@@ -125,7 +125,7 @@ def zybo_hw_dir():
 
 
 def zybo_hw_name(board):
-    """Vivado project / .xsa name, as zybo/vivado/zybo_gpio.tcl names it."""
+    """Vivado project / .xsa name, as zybo/vivado/zybo_design.tcl names it."""
     return "zybo" if board == "zybo" else f"zybo_{board}"
 
 
@@ -134,7 +134,7 @@ def cmd_zybo_xsa(args):
     out = zybo_hw_dir()
     out.mkdir(parents=True, exist_ok=True)
     cmd = [vivado, "-mode", "batch", "-nojournal", "-log", out / f"vivado_{args.board}.log",
-           "-source", tools.repo_dir("zybo", "vivado", "zybo_gpio.tcl"), "-tclargs", out, args.board]
+           "-source", tools.repo_dir("zybo", "vivado", "zybo_design.tcl"), "-tclargs", out, args.board]
     return tools.run(cmd + (["bd"] if args.bd_only else []), cwd=out)
 
 
